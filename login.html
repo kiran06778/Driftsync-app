@@ -4,61 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriftSync - Sign In</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="tailwind.css">
     <link rel="stylesheet" href="theme.css">
+    <script src="ui.js"></script>
 </head>
-<body class="ds flex items-center justify-center p-6">
+<body class="ds login-page">
 
-    <div class="w-full max-w-[420px]">
-        <div class="text-center mb-8">
-            <div class="wordmark serif text-[26px] justify-center"><span class="dot"></span>driftsync</div>
-            <p class="serif text-[17px] muted mt-3 italic">Find your focus, gently.</p>
+            <div class="theme-switch floating" role="group" aria-label="Theme">
+            <button type="button" data-theme-set="studio" title="Studio theme"><span class="sw studio"></span><span class="sw-label">Studio</span></button>
+            <button type="button" data-theme-set="studio-night" title="Studio Night theme"><span class="sw studio-night"></span><span class="sw-label">Night</span></button>
+            <button type="button" data-theme-set="bloom" title="Bloom theme"><span class="sw bloom"></span><span class="sw-label">Bloom</span></button>
+            <button type="button" data-theme-set="matte" title="Matte theme"><span class="sw matte"></span><span class="sw-label">Matte</span></button>
+
+            <button type="button" data-theme-set="nocturne" title="Nocturne theme"><span class="sw noct"></span><span class="sw-label">Nocturne</span></button>
+            <button type="button" data-theme-set="graphite" title="Graphite theme"><span class="sw graph"></span><span class="sw-label">Graphite</span></button>
         </div>
+    <div class="login-shell">
+        <!-- Left: product showcase -->
+        <section class="login-hero" aria-hidden="true">
+            <div class="wordmark"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 15c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0"/><path d="M3.5 9.5c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0" opacity=".55"/></svg></span><span class="wordmark-text">DriftSync</span></div>
 
-        <div class="card p-7">
-            <div class="tabs mb-6">
-                <button id="tabLogin" type="button" onclick="switchTab('login')" class="tab-active">Sign in</button>
-                <button id="tabRegister" type="button" onclick="switchTab('register')">Create account</button>
+            <div class="hero-visual">
+                <div class="hero-ring r1"></div>
+                <div class="hero-ring r2"></div>
+                <div class="hero-ring r3"></div>
+                <div class="hero-core">
+                    <div class="text-[11px] tracking-[.18em] uppercase muted">Focus</div>
+                    <div class="serif text-[40px] leading-none mt-1 tnum">25:00</div>
+                </div>
+                <div class="hero-chip c1"><span class="pulse-dot"></span> Distraction shield on</div>
+                <div class="hero-chip c2"><span class="tag">92%</span> focus accuracy</div>
             </div>
 
-            <div id="alertBox" class="hidden mb-5"></div>
+            <div>
+                <h2 class="serif text-[28px] leading-tight font-semibold">Context-aware focus,<br><span class="text-grad">without the guilt.</span></h2>
+                <p class="muted mt-3 max-w-[380px] leading-relaxed">DriftSync notices when you drift, asks what you meant to do, and helps you get back to it.</p>
+            </div>
+        </section>
 
-            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
-                <div>
-                    <label class="label" for="loginIdentifier">Username or email</label>
-                    <input id="loginIdentifier" type="text" required autocomplete="username" placeholder="you@college.edu" class="input">
+        <!-- Right: sign in -->
+        <section class="login-form">
+            <div class="w-full max-w-[400px] fade-up">
+                <div class="mb-7">
+                    <h1 class="serif text-[26px] font-semibold">Welcome to DriftSync</h1>
+                    <p class="muted mt-1.5">Find your focus, gently.</p>
                 </div>
-                <div>
-                    <label class="label" for="loginPassword">Password</label>
-                    <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Your password" class="input">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block mt-2">Sign in</button>
-            </form>
 
-            <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
-                <div>
-                    <label class="label" for="regUsername">Username</label>
-                    <input id="regUsername" type="text" required autocomplete="username" placeholder="Pick a username" class="input">
+                <div class="tabs mb-6">
+                    <button id="tabLogin" type="button" onclick="switchTab('login')" class="tab-active">Sign in</button>
+                    <button id="tabRegister" type="button" onclick="switchTab('register')">Create account</button>
                 </div>
-                <div>
-                    <label class="label" for="regEmail">Email <span class="hint">(optional)</span></label>
-                    <input id="regEmail" type="email" autocomplete="email" placeholder="name@domain.com" class="input">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
+
+                <div id="alertBox" class="hidden mb-5"></div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 swap-in">
                     <div>
-                        <label class="label" for="regPassword">Password</label>
-                        <input id="regPassword" type="password" required autocomplete="new-password" placeholder="6+ characters" class="input">
+                        <label class="label" for="loginIdentifier">Username or email</label>
+                        <input id="loginIdentifier" type="text" required autocomplete="username" placeholder="you@college.edu" class="input">
                     </div>
                     <div>
-                        <label class="label" for="regConfirmPassword">Confirm</label>
-                        <input id="regConfirmPassword" type="password" required autocomplete="new-password" placeholder="Repeat it" class="input">
+                        <label class="label" for="loginPassword">Password</label>
+                        <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Your password" class="input">
                     </div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block mt-2">Create account</button>
-            </form>
-        </div>
+                    <label class="flex items-center gap-2 text-sm muted cursor-pointer select-none">
+                        <input id="rememberMe" type="checkbox" checked style="width:16px;height:16px;accent-color:var(--teal);">
+                        Keep me signed in on this computer
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-block mt-2">Sign in</button>
+                </form>
 
-        <p class="text-center text-xs faint mt-6">Your sessions stay on this computer.</p>
+                <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden swap-in">
+                    <div>
+                        <label class="label" for="regUsername">Username</label>
+                        <input id="regUsername" type="text" required autocomplete="username" placeholder="Pick a username" class="input">
+                    </div>
+                    <div>
+                        <label class="label" for="regEmail">Email <span class="hint">(optional)</span></label>
+                        <input id="regEmail" type="email" autocomplete="email" placeholder="name@domain.com" class="input">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label" for="regPassword">Password</label>
+                            <input id="regPassword" type="password" required autocomplete="new-password" placeholder="6+ characters" class="input">
+                        </div>
+                        <div>
+                            <label class="label" for="regConfirmPassword">Confirm</label>
+                            <input id="regConfirmPassword" type="password" required autocomplete="new-password" placeholder="Repeat it" class="input">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block mt-2">Create account</button>
+                </form>
+
+                <p class="text-xs faint mt-8 flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                    Your sessions stay on this computer.
+                </p>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -84,16 +126,30 @@
             document.getElementById('alertBox').className = 'hidden mb-5';
         }
 
+        // "Keep me signed in": skip this page when a saved sign-in exists (signing out clears it)
+        let autoTried = false;
+        async function tryAutoLogin() {
+            if (autoTried || !window.pywebview || !window.pywebview.api) return;
+            autoTried = true;
+            try {
+                const res = await window.pywebview.api.auto_login();
+                if (res && res.success) window.location.replace('setup.html');
+            } catch (e) { autoTried = false; }   // bridge not fully ready yet: pywebviewready tries again
+        }
+        window.addEventListener('pywebviewready', tryAutoLogin);
+        setTimeout(tryAutoLogin, 300);
+
         async function handleLogin(event) {
             event.preventDefault();
             hideAlert();
             const identifier = document.getElementById('loginIdentifier').value;
             const password = document.getElementById('loginPassword').value;
             try {
-                const res = await window.pywebview.api.login_user(identifier, password);
+                const remember = document.getElementById('rememberMe').checked;
+                const res = await window.pywebview.api.login_user(identifier, password, remember);
                 if (res.success) {
                     showAlert("Welcome back. Taking you in…", true);
-                    setTimeout(() => { window.location.href = 'setup.html'; }, 500);
+                    setTimeout(() => (window.dsGo || (u => { window.location.href = u; }))('setup.html'), 500);
                 } else {
                     showAlert(res.message, false);
                 }

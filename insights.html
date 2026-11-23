@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriftSync - Insights</title>
+    <link rel="stylesheet" href="tailwind.css">
+    <link rel="stylesheet" href="theme.css">
+    <script src="ui.js"></script>
+</head>
+<body class="ds">
+<div class="app-layout">
+    <nav class="side-nav" aria-label="Main">
+        <a href="setup.html" class="wordmark"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 15c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0"/><path d="M3.5 9.5c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0" opacity=".55"/></svg></span><span class="wordmark-text">DriftSync</span></a>
+        <div class="nav-group">Workspace</div>
+        <a href="index.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+            <span class="nav-label">Focus timer</span>
+        </a>
+        <a href="setup.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+            <span class="nav-label">Setup</span>
+        </a>
+        <a href="timetable.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span class="nav-label">Timetable</span>
+        </a>
+        <a href="insights.html" class="nav-item is-active" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            <span class="nav-label">Insights</span>
+        </a>
+        <div class="nav-group">Community</div>
+        <a href="leaderboard.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+            <span class="nav-label">Leaderboard</span>
+        </a>
+        <div class="nav-spacer"></div>
+        <div class="theme-switch" role="group" aria-label="Theme">
+            <button type="button" data-theme-set="studio" title="Studio theme"><span class="sw studio"></span><span class="sw-label">Studio</span></button>
+            <button type="button" data-theme-set="studio-night" title="Studio Night theme"><span class="sw studio-night"></span><span class="sw-label">Night</span></button>
+            <button type="button" data-theme-set="bloom" title="Bloom theme"><span class="sw bloom"></span><span class="sw-label">Bloom</span></button>
+            <button type="button" data-theme-set="matte" title="Matte theme"><span class="sw matte"></span><span class="sw-label">Matte</span></button>
+
+            <button type="button" data-theme-set="nocturne" title="Nocturne theme"><span class="sw noct"></span><span class="sw-label">Nocturne</span></button>
+            <button type="button" data-theme-set="graphite" title="Graphite theme"><span class="sw graph"></span><span class="sw-label">Graphite</span></button>
+        </div>
+        <div class="nav-user">
+            <span id="userBadge" class="user-chip"><span class="avatar">G</span><span>Guest</span></span>
+        </div>
+    </nav>
+
+    <div class="app-main">
+    <div class="page">
+
+    <div class="page-head" style="margin-bottom:22px">
+        <div>
+            <div class="eyebrow">Last 7 days</div>
+            <h1 class="page-title">Your week in <span class="text-grad">focus</span></h1>
+            <p class="page-sub">Focus blocks, breaks and drifts, all logged on this computer.</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+            <div id="filterBar" class="seg grid-cols-4 w-[400px] max-w-full">
+            <button data-level="all" class="filter-btn is-selected">All</button>
+            <button data-level="corporate" class="filter-btn">Level 1</button>
+            <button data-level="college" class="filter-btn">Level 2</button>
+            <button data-level="school" class="filter-btn">Level 3</button>
+            </div>
+            <button type="button" id="refreshBtn" class="btn btn-ghost btn-icon" style="width:40px;height:40px;border-radius:12px" title="Refresh" aria-label="Refresh">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat row -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-5 stagger">
+        <div class="card p-5" data-tilt>
+            <div class="card-head mb-4">
+                <span class="stat-label">Focus minutes</span>
+                <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></span>
+            </div>
+            <div id="focusTotalMins" class="stat-value tnum">0</div>
+            <div class="text-xs faint mt-2">valid focus blocks only</div>
+        </div>
+        <div class="card p-5" data-tilt>
+            <div class="card-head mb-4">
+                <span class="stat-label">Completed blocks</span>
+                <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></span>
+            </div>
+            <div id="sessionsTotal" class="stat-value tnum">0</div>
+            <div class="text-xs faint mt-2"><span id="breakTotalMins" class="tnum">0</span> break minutes taken</div>
+        </div>
+        <div class="card p-5 flex items-center justify-between gap-3" data-tilt>
+            <div>
+                <div class="stat-label">Focus accuracy</div>
+                <div class="text-xs faint mt-2 max-w-[130px] leading-relaxed">each off-topic drift costs 5%</div>
+            </div>
+            <div class="relative w-[92px] h-[92px] grid place-items-center shrink-0">
+                <svg class="absolute inset-0 -rotate-90" width="92" height="92" viewBox="0 0 84 84" style="overflow:visible">
+                    <defs>
+                        <linearGradient id="accGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#7684FF"/><stop offset="55%" stop-color="#A58BFF"/><stop offset="100%" stop-color="#E79BD3"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="42" cy="42" r="36" style="stroke: rgba(var(--line-rgb), 0.08)" stroke-width="7" fill="none"/>
+                    <circle id="accuracyRing" cx="42" cy="42" r="36" stroke="url(#accGrad)" stroke-width="7" fill="none"
+                            stroke-dasharray="226.2" stroke-dashoffset="226.2" stroke-linecap="round"
+                            style="transition: stroke-dashoffset 1.2s cubic-bezier(.2,.7,.2,1); filter: drop-shadow(0 0 6px rgba(var(--a-rgb),.6))"/>
+                </svg>
+                <div id="accuracyText" class="serif text-xl tnum">—</div>
+            </div>
+        </div>
+        <div class="card p-5" data-tilt>
+            <div class="card-head mb-4">
+                <span class="stat-label">Drifts caught</span>
+                <span class="icon-tile coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M12 8v5M12 16h.01"/></svg></span>
+            </div>
+            <div id="totalDrifts" class="stat-value tnum text-coral">0</div>
+            <div class="text-xs faint mt-2"><span id="allowedCount" class="text-teal">0</span> study videos allowed · <span id="onTopicCount" class="text-teal">0</span> on-topic</div>
+        </div>
+    </section>
+
+    <!-- Chart + breakdown -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <div class="card p-6 lg:col-span-2 fade-up">
+            <div class="flex justify-between items-baseline mb-8">
+                <h2 class="card-title">Focus per day</h2>
+                <span class="text-xs faint">minutes</span>
+            </div>
+            <div id="barChart" class="flex items-end gap-4 h-48"></div>
+        </div>
+        <div class="card p-6 fade-up">
+            <h2 class="card-title mb-1">Where you drifted</h2>
+            <p class="text-xs faint mb-5">YouTube visits are labelled by AI from the video title.</p>
+            <div id="breakdownContainer" class="space-y-4 overflow-y-auto max-h-52 pr-1"></div>
+        </div>
+    </section>
+
+    <!-- Today -->
+    <section id="todayCard" class="card overflow-hidden fade-up">
+        <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--line)">
+            <h2 class="card-title">Today</h2>
+            <span class="tag tag-quiet">Logged on this computer</span>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="ds-table">
+            <thead>
+                <tr>
+                    <th class="pl-6">Start</th>
+                    <th>End</th>
+                    <th>Mode</th>
+                    <th>Level</th>
+                    <th>Duration</th>
+                    <th>Outcome</th>
+                    <th class="text-center">Drifts</th>
+                    <th class="text-right pr-6">Accuracy</th>
+                </tr>
+            </thead>
+            <tbody id="sessionTableBody"></tbody>
+        </table>
+        </div>
+    </section>
+
+
+    </div><!-- /page -->
+    </div><!-- /app-main -->
+</div><!-- /app-layout -->
+
+    <script>
+        // Filled in from desktop_app.py -> get_insights() when the page opens (and on Refresh)
+        let SESSIONS = [];
+        let DAYS = [];
+        let DRIFT_BREAKDOWN = [];
+
+        const MODE_LABELS = { focus: "Focus", short_break: "Short break", long_break: "Long break" };
+        let currentFilter = 'all';
+
+        function esc(v) {
+            return String(v ?? '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function filtered() {
+            if (currentFilter === 'all') return SESSIONS;
+            return SESSIONS.filter(s => (s.level || '').toLowerCase() === currentFilter);
+        }
+
+        const LEVEL_LABELS = { corporate: 'Level 1 · Gentle', college: 'Level 2 · Balanced', school: 'Level 3 · Strict' };
+        function isValidFocus(s) { return s.mode === 'focus' && s.outcome !== 'Invalid'; }
+
+        function renderBars(list) {
+            const perDay = {};
+            list.filter(isValidFocus).forEach(s => { perDay[s.day] = (perDay[s.day] || 0) + s.actualSec; });
+            const data = DAYS.map(d => ({ ...d, mins: Math.floor((perDay[d.key] || 0) / 60) }));
+            const maxMins = Math.max(60, ...data.map(d => d.mins));
+            const todayKey = DAYS.length ? DAYS[DAYS.length - 1].key : '';
+
+            document.getElementById('barChart').innerHTML = data.map(d => {
+                const pct = (d.mins / maxMins) * 100;
+                const isToday = d.key === todayKey;
+                const bar = d.mins > 0      // a zero day shows no bar, just the baseline
+                    ? `<div class="day-bar ${isToday ? 'is-today' : ''} w-full max-w-[38px] relative"
+                            style="height:${pct}%;min-height:6px">
+                           <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[11px] tnum ${isToday ? 'text-teal' : 'muted'}">${d.mins}</span>
+                       </div>`
+                    : '';
+                return `
+                    <div class="flex-1 flex flex-col items-center h-full" title="${esc(d.date)}: ${d.mins} min">
+                        <div class="flex-1 w-full flex items-end justify-center day-col">${bar}</div>
+                        <span class="text-[11px] mt-2 ${isToday ? 'text-teal' : 'faint'}">${esc(d.day)}</span>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderAccuracy(list) {
+            const scored = list.filter(s => s.accuracy !== null && s.accuracy !== undefined);
+            const ring = document.getElementById('accuracyRing');
+            const text = document.getElementById('accuracyText');
+            const circumference = 226.2;
+            if (scored.length === 0) {            // no focus blocks yet: don't pretend it's 100%
+                ring.style.strokeDashoffset = circumference;
+                text.innerText = '—';
+                return;
+            }
+            const avg = Math.round(scored.reduce((a, s) => a + s.accuracy, 0) / scored.length);
+            ring.style.stroke = avg < 50 ? 'var(--sand)' : 'url(#accGrad)';
+            setTimeout(() => {
+                ring.style.strokeDashoffset = circumference - (avg / 100) * circumference;
+                text.innerText = avg + '%';
+            }, 200);
+        }
+
+        function renderTotals(list) {
+            const focusSec = list.filter(isValidFocus).reduce((a, s) => a + s.actualSec, 0);
+            const breakSec = list.filter(s => s.mode !== 'focus').reduce((a, s) => a + s.actualSec, 0);
+            document.getElementById('focusTotalMins').innerText = Math.round(focusSec / 60);
+            document.getElementById('breakTotalMins').innerText = Math.round(breakSec / 60);
+            document.getElementById('sessionsTotal').innerText = list.filter(s => s.mode === 'focus' && s.outcome === 'Completed').length;
+        }
+
+        function outcomeTag(outcome) {
+            if (outcome === 'Completed') return `<span class="tag">Completed</span>`;
+            if (outcome === 'Invalid') return `<span class="tag tag-quiet">Too short</span>`;
+            return `<span class="tag tag-sand">${esc(outcome)}</span>`;
+        }
+
+        function renderTable(list) {
+            const tbody = document.getElementById('sessionTableBody');
+            const today = list.filter(s => s.isToday);
+            if (today.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center muted" style="padding:36px">No sessions logged today${currentFilter === 'all' ? '' : ' for this level'}. Your first focus block will show up here.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = today.map(s => {
+                let accText = '—', accClass = 'faint';
+                if (s.accuracy !== null && s.accuracy !== undefined) {
+                    accText = s.accuracy + '%';
+                    accClass = s.accuracy >= 90 ? 'text-teal' : (s.accuracy < 70 ? 'text-sand' : '');
+                }
+                const isFocus = s.mode === 'focus';
+                return `
+                    <tr>
+                        <td class="pl-6 tnum">${esc(s.startTime)}</td>
+                        <td class="tnum muted">${esc(s.endTime)}</td>
+                        <td>${esc(MODE_LABELS[s.mode] || s.mode)}</td>
+                        <td class="muted">${esc(LEVEL_LABELS[(s.level || '').toLowerCase()] || s.level)}</td>
+                        <td class="tnum">${esc(s.actual)} <span class="faint">/ ${esc(s.planned)}</span></td>
+                        <td>${outcomeTag(s.outcome)}</td>
+                        <td class="text-center tnum ${isFocus && s.drifts ? 'text-coral' : 'faint'}">${isFocus ? s.drifts : '—'}</td>
+                        <td class="text-right pr-6 tnum font-semibold ${accClass}">${accText}</td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function renderBreakdown() {
+            const container = document.getElementById('breakdownContainer');
+            if (!DRIFT_BREAKDOWN || DRIFT_BREAKDOWN.length === 0) {
+                container.innerHTML = `<p class="text-sm muted">No drifts this week. Nice and steady.</p>`;
+                return;
+            }
+            container.innerHTML = DRIFT_BREAKDOWN.map(item => `
+                <div title="${esc(driftTip(item))}">
+                    <div class="flex justify-between items-baseline text-sm mb-1.5">
+                        <span class="truncate max-w-[200px]">${esc(item.app)}${item.category ? ` <span class="faint">· ${esc(item.category)}</span>` : ''}${item.onTopic ? ` <span class="text-teal text-xs">${item.onTopic === item.count ? 'on topic' : item.onTopic + ' on topic'}</span>` : ''}</span>
+                        <span class="tnum muted">${item.count} <span class="faint">· ${item.pct}%</span></span>
+                    </div>
+                    <div class="h-[6px] rounded-full" style="background:rgba(var(--line-rgb),0.08)">
+                        <div class="h-full rounded-full" style="width:${item.pct}%;background:${item.onTopic === item.count ? 'var(--grad)' : 'linear-gradient(90deg, #F3A3A0, var(--coral))'};box-shadow:0 0 10px ${item.onTopic === item.count ? 'rgba(var(--a-rgb),.45)' : 'rgba(255,140,158,.4)'}"></div>
+                    </div>
+                    ${driftResponses(item) ? `<div class="text-[11px] faint mt-1">${esc(driftResponses(item))}</div>` : ''}
+                </div>`).join('');
+        }
+
+        // What you did about these drifts. Level 1 drifts get a notification; Levels 2 and 3 show the popup.
+        function driftResponses(item) {
+            const parts = [];
+            if (item.reminded) parts.push(`${item.reminded} reminded by notification`);
+            if (item.wentBack) parts.push(`${item.wentBack} went back to focus`);
+            const typed = (item.unlocked || 0) - (item.continued || 0);
+            if (typed > 0) parts.push(`${typed} unlocked by typing the intention`);
+            if (item.continued) parts.push(`${item.continued} continued anyway`);
+            return parts.join(' · ');
+        }
+        function driftTip(item) {
+            const parts = [driftResponses(item)].filter(Boolean);
+            if (item.onTopic) parts.push(`${item.onTopic} related to your goal`);
+            return `${item.count} drift${item.count === 1 ? '' : 's'}` + (parts.length ? ': ' + parts.join(' · ') : '');
+        }
+
+        function renderAll() {
+            const list = filtered();
+            renderBars(list);
+            renderAccuracy(list);
+            renderTotals(list);
+            renderTable(list);
+        }
+
+        document.getElementById('filterBar').addEventListener('click', e => {
+            const btn = e.target.closest('.filter-btn');
+            if (!btn) return;
+            currentFilter = btn.dataset.level;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('is-selected', b === btn));
+            renderAll();
+        });
+
+        function fallbackDays() {
+            const out = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                out.push({ key, day: d.toLocaleDateString('en', { weekday: 'short' }), date: d.toLocaleDateString('en', { month: 'short', day: '2-digit' }) });
+            }
+            return out;
+        }
+
+        let loading = false;
+        async function loadInsights() {
+            if (loading || !(window.pywebview && window.pywebview.api && window.pywebview.api.get_insights)) return;
+            loading = true;
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('is-spinning');
+            try {
+                const data = await window.pywebview.api.get_insights();
+                SESSIONS = data.sessions || [];
+                DAYS = (data.days && data.days.length) ? data.days : fallbackDays();
+                DRIFT_BREAKDOWN = data.breakdown || [];
+                document.getElementById('totalDrifts').innerText = data.totalDrifts || 0;
+                document.getElementById('allowedCount').innerText = data.allowed || 0;
+                document.getElementById('onTopicCount').innerText = data.onTopic || 0;
+                renderBreakdown();
+                renderAll();
+            } catch (e) {
+                console.error('Insights failed to load', e);
+            } finally {
+                loading = false;
+                setTimeout(() => btn.classList.remove('is-spinning'), 400);
+            }
+        }
+        document.getElementById('refreshBtn').addEventListener('click', loadInsights);
+
+        async function initUserBadge() {
+            try {
+                const user = await window.pywebview.api.get_current_user();
+                if (user && user.username) {
+                    document.getElementById('userBadge').innerHTML =
+                        `<span class="avatar">${esc(user.username.charAt(0))}</span><span>${esc(user.username)}</span>`;
+                }
+            } catch (e) {}
+        }
+
+        // Level 3: while a focus block is locked, Insights stays closed. Back to the timer.
+        async function strictGuard() {
+            try {
+                const s = await window.pywebview.api.get_strict_block();
+                if (s && s.active) { window.location.replace('index.html'); return true; }
+            } catch (e) {}
+            return false;
+        }
+
+        async function boot() {
+            if (boot.done || !(window.pywebview && window.pywebview.api)) return;
+            boot.done = true;
+            if (await strictGuard()) return;
+            initUserBadge();
+            loadInsights();
+        }
+        DAYS = fallbackDays();
+        renderBreakdown();
+        renderAll();
+        window.addEventListener('pywebviewready', boot);
+        setTimeout(boot, 300);
+        // coming back to the app after a session: show fresh numbers
+        document.addEventListener('visibilitychange', () => { if (!document.hidden && boot.done) loadInsights(); });
+    </script>
+</body>
+</html>

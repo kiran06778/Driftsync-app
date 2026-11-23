@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriftSync - Leaderboard</title>
+    <link rel="stylesheet" href="tailwind.css">
+    <link rel="stylesheet" href="theme.css">
+    <script src="ui.js"></script>
+    <style>
+        /* Leaderboard-only layout. Colours come from the theme tokens, so every theme works. */
+        .lb-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .lb-seg3 { grid-template-columns: repeat(3, 1fr); width: 300px; max-width: 100%; }
+        .lb-seg4 { grid-template-columns: repeat(4, 1fr); width: 380px; max-width: 100%; }
+        .lb-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-bottom: 20px; }
+        @media (min-width: 1024px) { .lb-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .lb-of { font-size: 15px; font-weight: 500; letter-spacing: 0; margin-left: 6px; }
+
+        .lb-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: end; margin-bottom: 20px; }
+        .lb-spot { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center;
+                   padding: 22px 16px 18px; border-radius: var(--radius, 14px); background: var(--surface); border: 1px solid var(--line); }
+        .lb-spot.first { padding-top: 34px; padding-bottom: 26px; border-color: var(--teal-line); box-shadow: 0 0 0 1px var(--teal-soft) inset; }
+        .lb-spot.is-me { background: linear-gradient(180deg, var(--teal-soft), transparent 70%), var(--surface); }
+        .lb-spot.empty { border-style: dashed; background: transparent; color: var(--faint); }
+        .lb-medal { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); min-width: 26px; height: 26px; padding: 0 8px;
+                    border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+                    background: var(--surface-2); color: var(--muted); border: 1px solid var(--line-2); }
+        .lb-spot.first .lb-medal { background: var(--teal); color: var(--on-primary); border-color: transparent; }
+        .lb-spot.third .lb-medal { color: var(--sand); border-color: var(--sand-line); }
+        .lb-ava { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-weight: 600; font-size: 18px;
+                  background: var(--surface-2); color: var(--text); border: 1px solid var(--line); margin-bottom: 10px; text-transform: uppercase; }
+        .lb-spot.first .lb-ava { width: 56px; height: 56px; font-size: 22px; background: var(--teal-soft); color: var(--accent-text); border-color: var(--teal-line); }
+        .lb-spot.empty .lb-ava { border-style: dashed; background: transparent; color: var(--faint); }
+        .lb-name { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .lb-big { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; margin-top: 6px; line-height: 1.1; }
+        .lb-spot.first .lb-big { font-size: 32px; color: var(--accent-text); }
+        .lb-sub { font-size: 12px; color: var(--faint); margin-top: 4px; }
+
+        .lb-table-head { padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+        .lb-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .lb-who .lb-ava { width: 30px; height: 30px; font-size: 13px; border-radius: 8px; margin: 0; flex-shrink: 0; }
+        .ds-table tr.is-me td { background: var(--teal-soft); }
+        .ds-table th.is-sorted { color: var(--accent-text); }
+        .ds-table td.is-sorted { font-weight: 600; }
+        .lb-rank { display: inline-grid; place-items: center; min-width: 26px; height: 24px; border-radius: 7px; font-weight: 600; font-size: 12.5px;
+                   background: var(--surface-2); border: 1px solid var(--line); }
+        .lb-rank.r1 { background: var(--teal); color: var(--on-primary); border-color: transparent; }
+        .lb-foot { font-size: 12px; line-height: 1.6; padding: 14px 24px 18px; border-top: 1px solid var(--line); }
+        #refreshBtn svg { flex-shrink: 0; width: 17px; height: 17px; min-width: 17px; }
+        @media (max-width: 640px) { .lb-controls, .lb-seg3, .lb-seg4 { width: 100%; } .lb-controls .seg { flex: 1; } }
+        @media (max-width: 640px) { .lb-podium { gap: 10px; } .lb-big { font-size: 20px; } .lb-spot.first .lb-big { font-size: 24px; } }
+    </style>
+</head>
+<body class="ds">
+<div class="app-layout">
+    <nav class="side-nav" aria-label="Main">
+        <a href="setup.html" class="wordmark"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 15c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0"/><path d="M3.5 9.5c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0" opacity=".55"/></svg></span><span class="wordmark-text">DriftSync</span></a>
+        <div class="nav-group">Workspace</div>
+        <a href="index.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+            <span class="nav-label">Focus timer</span>
+        </a>
+        <a href="setup.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+            <span class="nav-label">Setup</span>
+        </a>
+        <a href="timetable.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span class="nav-label">Timetable</span>
+        </a>
+        <a href="insights.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            <span class="nav-label">Insights</span>
+        </a>
+        <div class="nav-group">Community</div>
+        <a href="leaderboard.html" class="nav-item is-active" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+            <span class="nav-label">Leaderboard</span>
+        </a>
+        <div class="nav-spacer"></div>
+        <div class="theme-switch" role="group" aria-label="Theme">
+            <button type="button" data-theme-set="studio" title="Studio theme"><span class="sw studio"></span><span class="sw-label">Studio</span></button>
+            <button type="button" data-theme-set="studio-night" title="Studio Night theme"><span class="sw studio-night"></span><span class="sw-label">Night</span></button>
+            <button type="button" data-theme-set="bloom" title="Bloom theme"><span class="sw bloom"></span><span class="sw-label">Bloom</span></button>
+            <button type="button" data-theme-set="matte" title="Matte theme"><span class="sw matte"></span><span class="sw-label">Matte</span></button>
+
+            <button type="button" data-theme-set="nocturne" title="Nocturne theme"><span class="sw noct"></span><span class="sw-label">Nocturne</span></button>
+            <button type="button" data-theme-set="graphite" title="Graphite theme"><span class="sw graph"></span><span class="sw-label">Graphite</span></button>
+        </div>
+        <div class="nav-user">
+            <span id="userBadge" class="user-chip"><span class="avatar">G</span><span>Guest</span></span>
+        </div>
+    </nav>
+
+    <div class="app-main">
+    <div class="page">
+
+    <div class="page-head" style="margin-bottom:22px">
+        <div>
+            <div class="eyebrow" id="rangeLabel">Last 7 days · this computer</div>
+            <h1 class="page-title">Who stayed in <span class="text-grad">focus</span></h1>
+            <p class="page-sub">Everyone who signs in to DriftSync on this computer, ranked. Nothing leaves this machine.</p>
+        </div>
+        <div class="lb-controls">
+            <div id="periodBar" class="seg lb-seg3" role="group" aria-label="Time range">
+                <button data-period="week" class="filter-btn is-selected">7 days</button>
+                <button data-period="month" class="filter-btn">30 days</button>
+                <button data-period="all" class="filter-btn">All time</button>
+            </div>
+            <button type="button" id="refreshBtn" class="btn btn-ghost btn-icon" style="width:40px;height:40px;border-radius:12px" title="Refresh" aria-label="Refresh">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Your standing -->
+    <section class="lb-stats stagger">
+        <div class="card p-5" data-tilt>
+            <div class="card-head mb-4">
+                <span class="stat-label">Your rank</span>
+                <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>
+            </div>
+            <div class="stat-value tnum"><span id="myRank">—</span><span class="lb-of faint" id="myOf"></span></div>
+            <div class="text-xs faint mt-2" id="myGap">Sign in to join the board</div>
+        </div>
+        <div class="card p-5" data-tilt>
+            <div class="card-head mb-4">
+                <span class="stat-label">Focus score</span>
+                <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg></span>
+            </div>
+            <div id="myScore" class="stat-value tnum">0</div>
+            <div class="text-xs faint mt-2"><span id="myMinutes" class="tnum">0</span> focus min × <span id="myAcc" class="tnum">—</span> accuracy</div>
+        </div>
+        <div class="card p-5" data-tilt>
+            <div class="card-head mb-4">
+                <span class="stat-label">Day streak</span>
+                <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.6 1 2.5 2 3 0-3 0-5.5 1-8.5z"/></svg></span>
+            </div>
+            <div class="stat-value tnum"><span id="myStreak">0</span><span class="lb-of faint">days</span></div>
+            <div class="text-xs faint mt-2">best ever: <span id="myBestStreak" class="tnum">0</span> days</div>
+        </div>
+        <div class="card p-5" data-tilt>
+            <div class="card-head mb-4">
+                <span class="stat-label">Personal best</span>
+                <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></span>
+            </div>
+            <div class="stat-value tnum"><span id="myBestDay">0</span><span class="lb-of faint">min</span></div>
+            <div class="text-xs faint mt-2">in one day · longest block <span id="myLongest" class="tnum">0</span> min</div>
+        </div>
+    </section>
+
+    <!-- Top three -->
+    <section id="podium" class="lb-podium fade-up" aria-label="Top three"></section>
+
+    <!-- Full table -->
+    <section class="card overflow-hidden fade-up">
+        <div class="lb-table-head">
+            <h2 class="card-title">Rankings</h2>
+            <div id="metricBar" class="seg lb-seg4" role="group" aria-label="Rank by">
+                <button data-metric="score" class="filter-btn is-selected">Score</button>
+                <button data-metric="minutes" class="filter-btn">Minutes</button>
+                <button data-metric="streak" class="filter-btn">Streak</button>
+                <button data-metric="accuracy" class="filter-btn">Accuracy</button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="ds-table">
+            <thead>
+                <tr>
+                    <th class="pl-6" style="width:64px">Rank</th>
+                    <th>Name</th>
+                    <th class="text-right" data-col="score">Score</th>
+                    <th class="text-right" data-col="minutes">Focus min</th>
+                    <th class="text-right">Completed</th>
+                    <th class="text-right">Drifts</th>
+                    <th class="text-right" data-col="accuracy">Accuracy</th>
+                    <th class="text-right pr-6" data-col="streak">Streak</th>
+                </tr>
+            </thead>
+            <tbody id="lbBody"></tbody>
+        </table>
+        </div>
+        <p class="lb-foot faint">Score = focus minutes × focus accuracy (each off-topic drift in a block costs 5%), so time spent on task counts most.
+            Blocks under the minimum length don't count. Streaks are days in a row with at least one focus block.</p>
+    </section>
+
+    </div><!-- /page -->
+    </div><!-- /app-main -->
+</div><!-- /app-layout -->
+
+    <script>
+        // Filled in from desktop_app.py -> get_leaderboard(period, metric)
+        let period = 'week', metric = 'score';
+        let DATA = { rows: [], me: null, gap: null, totalUsers: 0 };
+
+        const METRIC_UNIT = { score: 'points', minutes: 'min', streak: 'days', accuracy: '%' };
+        const RANGE_LABEL = { week: 'Last 7 days', month: 'Last 30 days', all: 'All time' };
+
+        function esc(v) {
+            return String(v ?? '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+        function metricText(r, m = metric) {
+            if (m === 'accuracy') return r.accuracy === null || r.accuracy === undefined ? '—' : r.accuracy + '%';
+            if (m === 'streak') return r.streak + (r.streak === 1 ? ' day' : ' days');
+            if (m === 'minutes') return r.minutes + ' min';
+            return String(r.score);
+        }
+        function initial(name) { return esc((name || '?').trim().charAt(0) || '?'); }
+
+        function renderMe() {
+            const me = DATA.me;
+            const set = (id, v) => { document.getElementById(id).innerText = v; };
+            if (!me) {
+                set('myRank', '—'); set('myOf', ''); set('myGap', 'Sign in to join the board');
+                ['myScore', 'myMinutes', 'myStreak', 'myBestStreak', 'myBestDay', 'myLongest'].forEach(id => set(id, 0));
+                set('myAcc', '—');
+                return;
+            }
+            set('myRank', '#' + me.rank);
+            set('myOf', 'of ' + DATA.totalUsers);
+            set('myScore', me.score);
+            set('myMinutes', me.minutes);
+            set('myAcc', me.accuracy === null ? '—' : me.accuracy + '%');
+            set('myStreak', me.streak);
+            set('myBestStreak', me.bestStreak);
+            set('myBestDay', me.bestDayMin);
+            set('myLongest', me.longestBlockMin);
+            let gap;
+            if (DATA.gap) gap = `${DATA.gap.amount} ${METRIC_UNIT[metric]} to pass ${DATA.gap.name}`;
+            else if (DATA.totalUsers <= 1) gap = me.blocks ? 'Only you so far. Add a classmate to compete' : 'Finish a focus block to get on the board';
+            else gap = me.blocks || metric === 'streak' && me.streak ? 'You are leading. Keep it up' : 'Finish a focus block to get on the board';
+            set('myGap', gap);
+        }
+
+        function spot(r, place) {
+            const cls = ['lb-spot', place === 1 ? 'first' : place === 3 ? 'third' : ''];
+            if (!r) {
+                return `<div class="${cls.join(' ')} empty">
+                    <span class="lb-medal">${place}</span>
+                    <div class="lb-ava">+</div>
+                    <div class="lb-name">Open spot</div>
+                    <div class="lb-sub">A classmate can sign up on this computer</div>
+                </div>`;
+            }
+            if (r.isMe) cls.push('is-me');
+            return `<div class="${cls.join(' ')}">
+                <span class="lb-medal">${r.rank}</span>
+                <div class="lb-ava">${initial(r.name)}</div>
+                <div class="lb-name" title="${esc(r.name)}">${esc(r.name)}${r.isMe ? ' <span class="faint" style="font-weight:500">(you)</span>' : ''}</div>
+                <div class="lb-big tnum">${esc(metricText(r))}</div>
+                <div class="lb-sub tnum">${r.minutes} min · ${r.drifts} drift${r.drifts === 1 ? '' : 's'}</div>
+            </div>`;
+        }
+
+        function renderPodium() {
+            const top = DATA.rows.slice(0, 3);
+            // 2nd, 1st, 3rd so the winner stands in the middle
+            document.getElementById('podium').innerHTML = [spot(top[1], 2), spot(top[0], 1), spot(top[2], 3)].join('');
+        }
+
+        function renderTable() {
+            document.querySelectorAll('th[data-col]').forEach(th => th.classList.toggle('is-sorted', th.dataset.col === metric));
+            const body = document.getElementById('lbBody');
+            if (!DATA.rows.length) {
+                body.innerHTML = `<tr><td colspan="8" class="text-center muted" style="padding:36px">No accounts yet. Sign up and finish a focus block to start the board.</td></tr>`;
+                return;
+            }
+            const sorted = c => c === metric ? 'is-sorted' : '';
+            body.innerHTML = DATA.rows.map(r => `
+                <tr class="${r.isMe ? 'is-me' : ''}">
+                    <td class="pl-6"><span class="lb-rank ${r.rank === 1 ? 'r1' : ''} tnum">${r.rank}</span></td>
+                    <td><div class="lb-who"><span class="lb-ava">${initial(r.name)}</span>
+                        <span class="truncate">${esc(r.name)}</span>${r.isMe ? '<span class="tag">You</span>' : ''}</div></td>
+                    <td class="text-right tnum ${sorted('score')}">${r.score}</td>
+                    <td class="text-right tnum ${sorted('minutes')}">${r.minutes}</td>
+                    <td class="text-right tnum muted">${r.completed}</td>
+                    <td class="text-right tnum ${r.drifts ? 'text-coral' : 'faint'}">${r.drifts}</td>
+                    <td class="text-right tnum ${sorted('accuracy')}">${r.accuracy === null ? '<span class="faint">—</span>' : r.accuracy + '%'}</td>
+                    <td class="text-right pr-6 tnum ${sorted('streak')}">${r.streak}<span class="faint"> / ${r.bestStreak}</span></td>
+                </tr>`).join('');
+        }
+
+        function renderAll() {
+            document.getElementById('rangeLabel').innerText = RANGE_LABEL[period] + ' · this computer';
+            renderMe();
+            renderPodium();
+            renderTable();
+        }
+
+        function hookSeg(id, attr, apply) {
+            document.getElementById(id).addEventListener('click', e => {
+                const btn = e.target.closest('.filter-btn');
+                if (!btn) return;
+                document.querySelectorAll(`#${id} .filter-btn`).forEach(b => b.classList.toggle('is-selected', b === btn));
+                apply(btn.dataset[attr]);
+                load();
+            });
+        }
+        hookSeg('periodBar', 'period', v => { period = v; });
+        hookSeg('metricBar', 'metric', v => { metric = v; });
+
+        let loading = false, again = false;
+        async function load() {
+            if (!(window.pywebview && window.pywebview.api && window.pywebview.api.get_leaderboard)) return;
+            if (loading) { again = true; return; }
+            loading = true;
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('is-spinning');
+            try {
+                const data = await window.pywebview.api.get_leaderboard(period, metric);
+                if (data) DATA = data;
+                renderAll();
+            } catch (e) {
+                console.error('Leaderboard failed to load', e);
+            } finally {
+                loading = false;
+                setTimeout(() => btn.classList.remove('is-spinning'), 400);
+                if (again) { again = false; load(); }
+            }
+        }
+        document.getElementById('refreshBtn').addEventListener('click', load);
+
+        async function initUserBadge() {
+            try {
+                const user = await window.pywebview.api.get_current_user();
+                if (user && user.username) {
+                    document.getElementById('userBadge').innerHTML =
+                        `<span class="avatar">${esc(user.username.charAt(0))}</span><span>${esc(user.username)}</span>`;
+                }
+            } catch (e) {}
+        }
+
+        // Level 3: while a focus block is locked, the leaderboard stays closed. Back to the timer.
+        async function strictGuard() {
+            try {
+                const s = await window.pywebview.api.get_strict_block();
+                if (s && s.active) { window.location.replace('index.html'); return true; }
+            } catch (e) {}
+            return false;
+        }
+
+        async function boot() {
+            if (boot.done || !(window.pywebview && window.pywebview.api)) return;
+            boot.done = true;
+            if (await strictGuard()) return;
+            initUserBadge();
+            load();
+        }
+        renderAll();
+        window.addEventListener('pywebviewready', boot);
+        setTimeout(boot, 300);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden && boot.done) load(); });
+    </script>
+</body>
+</html>

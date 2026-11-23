@@ -10,3 +10,15 @@ venv/
 
 # OS
 .DS_Store
+
+# Local backups made before big changes
+backups/
+
+# Local settings (one-time warnings seen)
+prefs.json
+
+# Generated when the dashboard opens
+dashboard_live.html
+
+# The running Level 3 block (so it survives a force quit)
+strict_block.json
