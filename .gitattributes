@@ -1,0 +1,3 @@
+# Windows cmd.exe misreads batch files with Unix line endings (labels and goto break)
+*.bat text eol=crlf
+*.command text eol=lf

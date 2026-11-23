@@ -44,14 +44,19 @@ _YT_SUFFIX = re.compile(r'\s*[-–—|]\s*YouTube(\s+Music)?\s*$', re.IGNORECASE
 # Firefox-style window titles end with the browser name: "Video title - YouTube — Mozilla Firefox"
 _BROWSER_SUFFIX = re.compile(r'\s*[-–—]\s*(Mozilla Firefox|Firefox Developer Edition|Zen Browser|Google Chrome|'
                              r'Brave|Microsoft Edge|Opera|Vivaldi|Chromium)(\s+Private Browsing)?\s*$', re.IGNORECASE)
+# Same browser set platform_bridge uses for AppleScript tab reading (Safari-style window titles)
+_SAFARI_LIKE = platform_bridge._SAFARI_LIKE
 _NOTIF_COUNT = re.compile(r'^\(\d+\)\s*')
 _GENERIC = {"", "youtube", "youtube music", "home", "start page", "new tab", "subscriptions", "history",
             "watch later", "library", "shorts", "you"}
 
 
+_INVISIBLE = re.compile('[\u200b-\u200f\u2060\ufeff]')   # Windows Edge titles: "Microsoft\u200b Edge"
+
+
 def clean_youtube_title(raw_title, app_name=""):
     """Returns the video title, or "" when no specific video is open (home page, search...)."""
-    t = (raw_title or "").strip()
+    t = _INVISIBLE.sub('', raw_title or "").strip()
     # Safari profiles prefix the window title: "Personal — Video title - YouTube"
     if (app_name or "").strip().lower() in _SAFARI_LIKE:
         m = re.match(r'^([^—]{1,25}) — (.+)$', t)
@@ -77,7 +82,7 @@ def is_youtube_page(url, raw_title):
     if url:
         host = re.sub(r'^[a-z]+://', '', url.strip().lower()).split('/')[0].split(':')[0]
         return host == "youtu.be" or host == "youtube.com" or host.endswith(".youtube.com")
-    t = _NOTIF_COUNT.sub('', _BROWSER_SUFFIX.sub('', (raw_title or "").strip())).lower()
+    t = _NOTIF_COUNT.sub('', _BROWSER_SUFFIX.sub('', _INVISIBLE.sub('', raw_title or "").strip())).lower()
     return bool(_YT_SUFFIX.search(t)) or t in ("youtube", "youtube music") or "youtube.com" in t
 
 

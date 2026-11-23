@@ -4,66 +4,130 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DriftSync - Intention Check</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="tailwind.css">
 <link rel="stylesheet" href="theme.css">
+<script src="ui.js"></script>
 </head>
 <body class="ds flex items-center justify-center p-6">
-<div class="card w-full max-w-md p-7 fade-up">
+<div class="card card-glow w-full max-w-md p-7 fade-up">
 
-  <div class="flex items-center gap-3 mb-5">
-    <div class="w-11 h-11 rounded-full grid place-items-center" style="background:var(--coral-soft);border:1px solid var(--coral-line)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+  <div class="flex items-center gap-4 mb-5">
+    <div class="check-orb">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     </div>
     <div>
-      <h1 class="serif text-[22px] leading-tight">Let's check in</h1>
-      <p id="frictionReason" class="text-xs muted">You opened a blocked app during a focus block.</p>
+      <h1 id="frictionTitle" class="serif text-[22px] leading-tight font-semibold">Let's check in</h1>
+      <p id="frictionReason" class="text-xs muted mt-1 leading-relaxed">You opened a blocked app during a focus block.</p>
     </div>
   </div>
 
   <!-- Filled in by the AI a second or two after YouTube is blocked -->
   <div id="videoInsight" class="hidden card-soft px-4 py-3 mb-3"></div>
 
-  <div class="card-soft px-4 py-3.5 mb-5">
-    <div class="text-[11px] faint uppercase tracking-[0.14em] mb-1">Your intention</div>
+  <div class="intent-box px-4 py-3.5 mb-5">
+    <div class="eyebrow mb-1.5">Your intention</div>
     <p id="targetGoalDisplay" class="serif text-[17px] leading-snug">Loading…</p>
   </div>
 
   <form onsubmit="verifyGoal(event)" class="space-y-5">
-    <div>
-      <label class="label" for="goalInput">Type it to unlock a short break</label>
+    <div id="goalBlock">
+      <label id="goalLabel" class="label" for="goalInput">Type it to unlock a short break</label>
       <input id="goalInput" type="text" required autocomplete="off" class="input" placeholder="Type your intention…">
     </div>
 
-    <div>
+    <div id="graceBlock">
       <div class="flex justify-between items-center mb-2">
         <span class="label" style="margin:0">Break length</span>
         <span id="graceLabel" class="text-xs text-sand font-semibold">2 Minutes</span>
       </div>
       <div id="graceSeg" class="seg grid-cols-4">
-        <button type="button" onclick="setGrace(1, this)" class="grace-btn">1m</button>
-        <button type="button" onclick="setGrace(2, this)" class="grace-btn is-selected">2m</button>
-        <button type="button" onclick="setGrace(5, this)" class="grace-btn">5m</button>
-        <button type="button" onclick="setGrace(10, this)" class="grace-btn">10m</button>
+        <button type="button" onclick="setGrace(1, this)" data-min="1" class="grace-btn">1m</button>
+        <button type="button" onclick="setGrace(2, this)" data-min="2" class="grace-btn is-selected">2m</button>
+        <button type="button" onclick="setGrace(5, this)" data-min="5" class="grace-btn">5m</button>
+        <button type="button" onclick="setGrace(10, this)" data-min="10" class="grace-btn">10m</button>
       </div>
     </div>
 
     <div class="grid grid-cols-2 gap-3 pt-1">
-      <button type="button" onclick="stayOnTask()" class="btn btn-primary">Back to focus</button>
+      <button type="button" id="stayBtn" onclick="stayOnTask()" class="btn btn-primary">Back to focus</button>
       <button type="submit" id="unlockBtn" class="btn btn-secondary">Unlock break</button>
     </div>
   </form>
 
+  <p id="softNote" class="hidden text-xs faint mt-4 text-center"></p>
   <div id="feedback" class="hidden mt-5"></div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
 let requestedGrace = 2;
+let rules = { level: "2", maxGrace: 5, needsTyping: true, exactMatch: false, unlocksLeft: null };
+const UNLOCK_LABEL = { "1": "Continue anyway", "2": "Unlock break", "3": "Unlock 1-min break" };
+
+// The popup changes with the strictness level chosen in Setup
+let rulesTries = 0;
+async function applyRules() {
+  try { rules = Object.assign(rules, await window.pywebview.api.get_friction_rules()); }
+  catch (e) { if (++rulesTries < 10) setTimeout(applyRules, 300); return; }   // bridge not ready yet
+  const lvl = String(rules.level);
+  $('unlockBtn').textContent = UNLOCK_LABEL[lvl] || 'Unlock break';
+
+  // Break lengths longer than this level allows are hidden instead of being cut short silently
+  const btns = Array.from(document.querySelectorAll('.grace-btn[data-min]'));
+  btns.forEach(b => b.classList.toggle('hidden', +b.dataset.min > rules.maxGrace));
+  const shown = btns.filter(b => !b.classList.contains('hidden'));
+  $('graceSeg').classList.remove('grid-cols-4', 'grid-cols-5', 'grid-cols-1', 'grid-cols-3');
+  $('graceSeg').classList.add(`grid-cols-${shown.length + (document.getElementById('grace10') ? 1 : 0)}`);
+  if (!document.getElementById('grace10')) {
+    const pick = lvl === "1" ? shown.find(b => b.dataset.min === "5") : (shown.find(b => b.dataset.min === "2") || shown[shown.length - 1]);
+    if (pick) setGrace(+pick.dataset.min, pick);
+  }
+
+  if (lvl === "1") {
+    const app = rules.app ? rules.app : 'This app';
+    $('frictionTitle').textContent = 'Quick reminder';
+    $('frictionReason').textContent = `${app} is on your drift list. Nothing is locked at Level 1, but it shows in your report.`;
+    $('goalBlock').classList.add('hidden');
+    $('goalInput').required = false;
+    const n = rules.continues || 0;
+    if (n > 0) {
+      $('softNote').textContent = `You've chosen "Continue anyway" ${n} time${n > 1 ? 's' : ''} this focus block.`;
+      $('softNote').classList.remove('hidden');
+    }
+    updateContinueLabel();
+    $('stayBtn').focus();   // Enter or Space picks "Back to focus", the safe choice
+  } else if (lvl === "3") {
+    $('frictionTitle').textContent = 'Strict focus';
+    $('frictionReason').textContent = 'Level 3: this app is blocked until the focus block ends.';
+    $('goalLabel').textContent = 'Type it exactly to unlock one 1-minute break';
+    // Level 3 means typing it: pasting or dropping the intention in doesn't count
+    ['paste', 'drop'].forEach(ev => $('goalInput').addEventListener(ev, e => {
+      e.preventDefault();
+      showFeedback(false, 'Level 3: type your intention, pasting is off.');
+    }));
+    if (rules.unlocksLeft === 0) {
+      $('goalBlock').classList.add('hidden');
+      $('graceBlock').classList.add('hidden');
+      $('goalInput').required = false;
+      $('unlockBtn').classList.add('hidden');
+      $('stayBtn').parentElement.classList.replace('grid-cols-2', 'grid-cols-1');
+      showFeedback(false, "You've used this block's one break. Go back to focus; the timer is still running.");
+    }
+  }
+}
 
 function setGrace(mins, btnElement) {
   requestedGrace = mins;
   document.querySelectorAll('.grace-btn').forEach(el => el.classList.toggle('is-selected', el === btnElement));
   $('graceLabel').textContent = mins < 1 ? `${Math.round(mins * 60)} Seconds` : `${mins} Minute${mins > 1 ? 's' : ''}`;
+  updateContinueLabel();
+}
+
+// Level 1: the button says how long you're continuing for, e.g. "Continue 5 min"
+function updateContinueLabel() {
+  if (String(rules.level) !== "1" || $('unlockBtn').disabled) return;
+  const g = requestedGrace;
+  $('unlockBtn').textContent = `Continue ${g < 1 ? Math.round(g * 60) + ' sec' : g + ' min'}`;
 }
 
 function esc(v) {
@@ -86,7 +150,8 @@ async function loadVideoInsight() {
   const tagClass = info.on_topic ? '' : (info.category === 'Study' ? 'tag-sand' : 'tag-coral');
   let smartOn = false;
   try { smartOn = !!(await window.pywebview.api.get_session_config()).smartYouTube; } catch (e) {}
-  const canOverride = smartOn && info.title && info.kind === 'video' && !info.on_topic;
+  // Level 3 is strict: no overriding the AI there
+  const canOverride = smartOn && String(rules.level) !== '3' && info.title && info.kind === 'video' && !info.on_topic;
   if (info.kind === 'browse') $('frictionReason').textContent = 'Your YouTube search time for this block is used up.';
   else if (info.kind === 'shorts') $('frictionReason').textContent = 'Shorts are blocked during focus blocks.';
   else if (info.title && !info.on_topic) $('frictionReason').textContent = 'This video doesn’t look related to your intention.';
@@ -141,7 +206,9 @@ async function verifyGoal(e) {
   btn.textContent = 'Checking…';
 
   try {
-    const res = await window.pywebview.api.verify_friction_goal(typed, requestedGrace);
+    const res = String(rules.level) === "1"
+      ? await window.pywebview.api.continue_anyway(requestedGrace)
+      : await window.pywebview.api.verify_friction_goal(typed, requestedGrace);
     if (res.success) {
       const g = (typeof res.approved_grace === 'number') ? res.approved_grace : requestedGrace;
       const label = g >= 1 ? `${g}-minute` : `${Math.round(g * 60)}-second`;
@@ -154,12 +221,13 @@ async function verifyGoal(e) {
     } else {
       showFeedback(false, res.message);
       btn.disabled = false;
-      btn.textContent = 'Unlock break';
+      btn.textContent = UNLOCK_LABEL[String(rules.level)] || 'Unlock break';
+      updateContinueLabel();
     }
   } catch (err) {
     showFeedback(false, "Couldn't reach the app backend.");
     btn.disabled = false;
-    btn.textContent = 'Unlock break';
+    btn.textContent = UNLOCK_LABEL[String(rules.level)] || 'Unlock break';
   }
 }
 
@@ -180,12 +248,15 @@ async function stayOnTask() {
   }
 }
 
+// Esc always means "Back to focus" (allowed at every level)
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); stayOnTask(); } });
+
 // The page is reloaded every time the modal is shown, so loading once is enough (no polling)
 let booted = false;
 function boot() {
   if (booted) return;
   booted = true;
-  loadGoal(); applyDemoMode(); loadVideoInsight();
+  loadGoal(); applyDemoMode().then(applyRules); loadVideoInsight();
 }
 window.addEventListener('pywebviewready', boot);
 setTimeout(boot, 300);

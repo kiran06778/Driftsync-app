@@ -1,0 +1,4 @@
+Inter and Sora (Google Fonts), latin subset, variable weight 300-700.
+Both are licensed under the SIL Open Font License 1.1: https://openfontlicense.org
+Inter (c) The Inter Project Authors. Sora (c) The Sora Project Authors.
+Bundled so DriftSync looks the same with no internet connection.

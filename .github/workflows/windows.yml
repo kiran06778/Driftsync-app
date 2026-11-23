@@ -1,0 +1,48 @@
+# Runs DriftSync's tests and a short real launch on GitHub's Windows computers.
+# Only on branches named windows-test/* or when started by hand (Actions tab > Run workflow).
+name: Windows check
+on:
+  push:
+    branches: ["windows-test/**"]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install (same as DriftSync.bat does)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pillow
+      - name: Setup checker
+        run: python check_setup.py
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Real Windows calls
+        run: python tests\windows_smoke.py
+      - name: Launch the app for 40 seconds and take a screenshot
+        shell: pwsh
+        run: |
+          $p = Start-Process python -ArgumentList "desktop_app.py" -PassThru -RedirectStandardOutput app.log -RedirectStandardError app.err
+          Start-Sleep -Seconds 40
+          python -c "from PIL import ImageGrab; ImageGrab.grab().save('launch.png')"
+          $alive = -not $p.HasExited
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          Get-Content app.log, app.err -ErrorAction SilentlyContinue
+          if (-not $alive) { Write-Error "DriftSync exited during start-up"; exit 1 }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-${{ matrix.python }}
+          path: |
+            launch.png
+            app.log
+            app.err

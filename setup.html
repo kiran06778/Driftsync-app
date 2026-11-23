@@ -4,58 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriftSync - Setup</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="tailwind.css">
     <link rel="stylesheet" href="theme.css">
+    <script src="dialog.js"></script>
+    <script src="ui.js"></script>
 </head>
-<body class="ds px-6 md:px-10 py-6 flex flex-col">
+<body class="ds">
+<div class="app-layout">
+    <nav class="side-nav" aria-label="Main">
+        <a href="setup.html" class="wordmark"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 15c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0"/><path d="M3.5 9.5c2.6-4.2 5.9-4.2 8.5 0s5.9 4.2 8.5 0" opacity=".55"/></svg></span><span class="wordmark-text">DriftSync</span></a>
+        <div class="nav-group">Workspace</div>
+        <a href="index.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+            <span class="nav-label">Focus timer</span>
+        </a>
+        <a href="setup.html" class="nav-item is-active" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+            <span class="nav-label">Setup</span>
+        </a>
+        <a href="timetable.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span class="nav-label">Timetable</span>
+        </a>
+        <a href="insights.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            <span class="nav-label">Insights</span>
+        </a>
+        <div class="nav-group">Community</div>
+        <a href="leaderboard.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+            <span class="nav-label">Leaderboard</span>
+        </a>
+        <div class="nav-spacer"></div>
+        <div class="theme-switch" role="group" aria-label="Theme">
+            <button type="button" data-theme-set="studio" title="Studio theme"><span class="sw studio"></span><span class="sw-label">Studio</span></button>
+            <button type="button" data-theme-set="studio-night" title="Studio Night theme"><span class="sw studio-night"></span><span class="sw-label">Night</span></button>
+            <button type="button" data-theme-set="bloom" title="Bloom theme"><span class="sw bloom"></span><span class="sw-label">Bloom</span></button>
+            <button type="button" data-theme-set="matte" title="Matte theme"><span class="sw matte"></span><span class="sw-label">Matte</span></button>
 
-    <header class="flex items-center justify-between w-full mb-8">
-        <a href="setup.html" class="wordmark serif"><span class="dot"></span>driftsync</a>
-        <nav class="flex items-center gap-1">
-            <a href="timetable.html" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-                Timetable
-            </a>
-            <button onclick="window.pywebview.api.open_dashboard()" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-                Insights
+            <button type="button" data-theme-set="nocturne" title="Nocturne theme"><span class="sw noct"></span><span class="sw-label">Nocturne</span></button>
+            <button type="button" data-theme-set="graphite" title="Graphite theme"><span class="sw graph"></span><span class="sw-label">Graphite</span></button>
+        </div>
+        <div class="nav-user">
+            <span id="userBadge" class="user-chip"><span class="avatar">G</span><span>Guest</span></span>
+            <button type="button" onclick="logout()" class="btn btn-ghost btn-icon" style="width:36px;height:36px;border-radius:11px" title="Log out" aria-label="Log out">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>
             </button>
-            <span id="demoBadge" class="tag tag-sand hidden mr-1" title="DEMO_MODE=1 in .env">Demo mode</span>
-            <span id="userBadge" class="user-chip ml-2"><span class="avatar">G</span><span>Guest</span></span>
-            <button onclick="logout()" class="nav-link" title="Log out">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>
-            </button>
-        </nav>
+        </div>
+    </nav>
+
+    <div class="app-main">
+    <div class="page">
+
+    <header class="page-head">
+        <div>
+            <div class="eyebrow">New session</div>
+            <h1 class="page-title">Set your <span class="text-grad">intention</span></h1>
+            <p class="page-sub">Decide what this session is for. DriftSync will gently hold you to it.</p>
+        </div>
+        <span id="demoBadge" class="tag tag-sand hidden" title="DEMO_MODE=1 in .env">Demo mode</span>
     </header>
 
-    <div class="mb-6">
-        <h1 class="serif text-[34px] leading-tight">Set your intention</h1>
-        <p class="muted mt-1.5">Decide what this session is for. DriftSync will gently hold you to it.</p>
-    </div>
+    <main class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 flex-1">
 
-    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-
-        <div class="lg:col-span-2 space-y-6">
+        <div class="space-y-6 stagger min-w-0">
 
             <section>
                 <div class="label">Quick start</div>
                 <div class="grid grid-cols-3 gap-3">
-                    <button type="button" onclick="applyPreset('code')" class="option-card">
+                    <button type="button" onclick="applyPreset('code')" class="option-card" data-tilt="5">
+                        <span class="icon-tile mb-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></span>
                         <div class="font-semibold text-[15px]">Code sprint</div>
-                        <div class="text-xs muted mt-1">30 min · College · Social block</div>
+                        <div class="text-xs muted mt-1">30 min · Balanced · Social block</div>
                     </button>
-                    <button type="button" onclick="applyPreset('study')" class="option-card">
+                    <button type="button" onclick="applyPreset('study')" class="option-card" data-tilt="5">
+                        <span class="icon-tile mb-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5C4.5 5 8 5 12 7c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 7v12.5"/></svg></span>
                         <div class="font-semibold text-[15px]">Deep study</div>
-                        <div class="text-xs muted mt-1">60 min · College · Full block</div>
+                        <div class="text-xs muted mt-1">60 min · Balanced · Full block</div>
                     </button>
-                    <button type="button" onclick="applyPreset('writing')" class="option-card">
+                    <button type="button" onclick="applyPreset('writing')" class="option-card" data-tilt="5">
+                        <span class="icon-tile mb-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></span>
                         <div class="font-semibold text-[15px]">Writing session</div>
-                        <div class="text-xs muted mt-1">25 min · College · Social block</div>
+                        <div class="text-xs muted mt-1">25 min · Balanced · Social block</div>
                     </button>
                 </div>
             </section>
 
-            <section class="card p-6">
+            <section class="card card-glow p-6">
                 <label class="label" for="aimInput">What will you work on?</label>
                 <input id="aimInput" type="text" placeholder="e.g. Solve 2 LeetCode binary tree problems" value="I am studying data structures"
                        class="input input-lg serif">
@@ -65,34 +100,40 @@
             <section>
                 <div class="label">Enforcement level</div>
                 <div class="grid grid-cols-3 gap-3">
-                    <div class="option-card is-disabled">
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-semibold">Corporate</span>
-                            <span class="tag tag-quiet">Level 1</span>
-                        </div>
-                        <p class="text-xs muted">Soft reminders, usage report.</p>
-                        <p class="text-[11px] faint mt-2">Coming soon</p>
+                    <div id="mode-corporate" onclick="selectMode('Corporate', '1')" class="option-card has-tag">
+                        <span class="tag tag-quiet">Level 1</span>
+                        <div class="font-semibold text-[15px] mt-3">Gentle</div>
+                        <div class="text-xs faint mt-1">Recommended for work</div>
+                        <div class="meter l1"><i></i><i></i><i></i></div>
+                        <p class="text-xs muted leading-relaxed">Soft reminders; nothing is locked. Unlimited pauses. Every drift still shows in Insights.</p>
                     </div>
-                    <div id="mode-college" onclick="selectMode('College', '2')" class="option-card is-selected">
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-semibold">College</span>
-                            <span class="tag">Level 2</span>
-                        </div>
-                        <p class="text-xs muted">Friction screen; type your intention to continue. 2 pauses per block.</p>
+                    <div id="mode-college" onclick="selectMode('College', '2')" class="option-card has-tag is-selected">
+                        <span class="tag tag-quiet">Level 2</span>
+                        <div class="font-semibold text-[15px] mt-3">Balanced</div>
+                        <div class="text-xs faint mt-1">Recommended for college</div>
+                        <div class="meter l2"><i></i><i></i><i></i></div>
+                        <p class="text-xs muted leading-relaxed">Friction screen; type your intention to continue. 2 pauses per block.</p>
                     </div>
-                    <div class="option-card is-disabled">
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-semibold">School</span>
-                            <span class="tag tag-quiet">Level 3</span>
-                        </div>
-                        <p class="text-xs muted">Strict blocks, no early stops.</p>
-                        <p class="text-[11px] faint mt-2">Coming soon</p>
+                    <div id="mode-school" onclick="selectMode('School', '3')" class="option-card has-tag">
+                        <span class="tag tag-quiet">Level 3</span>
+                        <div class="font-semibold text-[15px] mt-3">Strict</div>
+                        <div class="text-xs faint mt-1">Recommended for school</div>
+                        <div class="meter l3"><i></i><i></i><i></i></div>
+                        <p class="text-xs muted leading-relaxed">Strict blocks, no pauses, no early stops. Exact intention for one 1-minute break per block.</p>
                     </div>
                 </div>
             </section>
 
             <section class="card p-6">
-                <div class="label">Drift shield <span class="hint">· apps and sites to intercept</span></div>
+                <div class="card-head mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+                        <div>
+                            <div class="card-title">Drift shield</div>
+                            <div class="text-xs faint">Apps and sites to intercept</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex flex-wrap gap-2 mb-4">
                     <button type="button" onclick="toggleBadge(this)" class="badge-item chip badge-active">Instagram</button>
                     <button type="button" onclick="toggleBadge(this)" class="badge-item chip badge-active">YouTube</button>
@@ -107,15 +148,76 @@
                 <label class="flex items-start justify-between gap-4 mt-5 pt-5 divider cursor-pointer">
                     <span>
                         <span class="block text-sm font-semibold">Smart YouTube</span>
-                        <span class="block text-xs muted mt-1 max-w-[440px]">AI reads the video title. Videos related to your intention play normally; Shorts and off-topic videos are blocked. Searching is allowed for a short while.</span>
+                        <span class="block text-xs muted mt-1 max-w-[440px] leading-relaxed">AI reads the video title. Videos related to your intention play normally; Shorts and off-topic videos are blocked. Searching is allowed for a short while.</span>
                     </span>
                     <span class="switch mt-0.5"><input id="smartYouTubeToggle" type="checkbox" checked><span class="slider"></span></span>
                 </label>
+
+                <label class="flex items-start justify-between gap-4 mt-5 pt-5 divider cursor-pointer">
+                    <span>
+                        <span class="block text-sm font-semibold">Desk check <span class="faint font-normal">· webcam</span></span>
+                        <span class="block text-xs muted mt-1 max-w-[440px] leading-relaxed">Checks that you're at your desk during focus blocks. If you're away longer than your allowed time, the timer pauses and an alarm rings until you're back. Runs on this computer only; no photos are saved or sent.</span>
+                    </span>
+                    <span class="switch mt-0.5"><input id="deskCheckToggle" type="checkbox" onchange="onDeskToggle(this)"><span class="slider"></span></span>
+                </label>
+                <div class="flex items-center justify-between gap-4 mt-4">
+                    <label for="deskAwaySelect" class="text-sm">
+                        <span class="block font-semibold">Allowed time away</span>
+                        <span class="block text-xs muted mt-1">How long you can leave your desk before the timer pauses and the alarm rings.</span>
+                    </label>
+                    <select id="deskAwaySelect" class="select" style="width:auto; min-width:140px;" onchange="updateDeskAwayText()">
+                        <option value="10" selected>10 seconds</option>
+                        <option value="20">20 seconds</option>
+                        <option value="30">30 seconds</option>
+                        <option value="60">1 minute</option>
+                        <option value="120">2 minutes</option>
+                        <option value="300">5 minutes</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-3 mt-4">
+                    <button type="button" id="deskTestBtn" onclick="toggleDeskPreview()" class="btn btn-secondary">Test camera</button>
+                    <span id="deskTestStatus" class="text-xs muted"></span>
+                </div>
+                <div id="deskPreviewWrap" class="hidden mt-3 swap-in">
+                    <img id="deskPreview" alt="Camera preview" class="rounded-2xl w-full max-w-[320px] bg-black/80" style="aspect-ratio: 4 / 3; object-fit: cover; border:1px solid var(--line-2)">
+                    <p id="deskAwayText" class="text-xs faint mt-2">Away for 10 seconds: the timer pauses and the alarm rings until you're back.</p>
+                </div>
+            </section>
+
+            <section class="card p-6">
+                <div class="flex items-center gap-3 mb-5">
+                    <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" opacity=".35"/></svg></span>
+                    <div>
+                        <div class="card-title">Appearance</div>
+                        <div class="text-xs faint">Saved on this computer</div>
+                    </div>
+                </div>
+                <div class="label">Theme</div>
+                <div class="theme-switch" role="group" aria-label="Theme" style="max-width:320px">
+                    <button type="button" data-theme-set="studio" title="Studio theme"><span class="sw studio"></span><span class="sw-label">Studio</span></button>
+                    <button type="button" data-theme-set="studio-night" title="Studio Night theme"><span class="sw studio-night"></span><span class="sw-label">Night</span></button>
+                    <button type="button" data-theme-set="bloom" title="Bloom theme"><span class="sw bloom"></span><span class="sw-label">Bloom</span></button>
+            <button type="button" data-theme-set="matte" title="Matte theme"><span class="sw matte"></span><span class="sw-label">Matte</span></button>
+
+                    <button type="button" data-theme-set="nocturne"><span class="sw noct"></span><span class="sw-label">Nocturne</span></button>
+                    <button type="button" data-theme-set="graphite"><span class="sw graph"></span><span class="sw-label">Graphite</span></button>
+                </div>
+                <div class="label mt-4">Page transition <span class="hint">· click one to preview it</span></div>
+                <div class="seg grid-cols-4" role="group" aria-label="Page transition">
+                    <button type="button" data-transition-set="fade" title="A plain crossfade">Fade</button>
+                    <button type="button" data-transition-set="slide" title="Slides sideways, following the sidebar order">Slide</button>
+                    <button type="button" data-transition-set="depth" title="Zooms in from behind, in 3D">Depth</button>
+                    <button type="button" data-transition-set="rise" title="Rises up out of a soft blur">Rise</button>
+                </div>
             </section>
         </div>
 
         <aside class="lg:sticky lg:top-6 self-start w-full">
-            <section class="card p-6 space-y-6">
+            <section class="card card-glow p-6 space-y-6 fade-up">
+                <div class="card-head">
+                    <span class="card-title">Session</span>
+                    <span class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></span>
+                </div>
                 <div>
                     <div class="label">Focus length</div>
                     <div id="durationSeg" class="seg grid-cols-4">
@@ -147,17 +249,29 @@
 
                 <div class="divider pt-5">
                     <label class="label" for="frictionStyleSelect">When you drift</label>
-                    <select id="frictionStyleSelect" class="select">
-                        <option value="fullscreen">Intention check (recommended)</option>
-                        <option value="banner" disabled>System banner (coming soon)</option>
-                        <option value="chime" disabled>Audio chime only (coming soon)</option>
-                    </select>
+                    <div class="flex gap-2 items-center">
+                        <select id="frictionStyleSelect" class="select" onchange="updateStyleTest()">
+                            <option value="fullscreen">Intention check (recommended)</option>
+                            <option value="banner" disabled>Notification (Level 1 only)</option>
+                            <option value="chime" disabled>Sound only (Level 1 only)</option>
+                        </select>
+                        <button type="button" id="styleTestBtn" onclick="testSoftReminder()" class="btn btn-secondary btn-sm hidden" title="Try it before you start">Test</button>
+                    </div>
+                    <p id="frictionStyleHint" class="text-xs faint mt-2 leading-relaxed">Levels 2 and 3 always use the intention check.</p>
+                    <p id="styleTestResult" class="text-xs mt-2 hidden"></p>
                 </div>
 
-                <button onclick="launchSession()" class="btn btn-primary btn-lg btn-block">Begin focus session</button>
+                <button onclick="launchSession()" class="btn btn-primary btn-lg btn-block">
+                    Begin focus session
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
             </section>
         </aside>
     </main>
+
+    </div><!-- /page -->
+    </div><!-- /app-main -->
+</div><!-- /app-layout -->
 
     <script>
         let selectedMode = "College";
@@ -180,12 +294,77 @@
 
         async function logout() {
             try { await window.pywebview.api.logout_user(); } catch(e){}
-            window.location.href = 'login.html';
+            (window.dsGo || (u => { window.location.href = u; }))('login.html');
         }
 
+        const LEVEL_CARDS = { "1": "mode-corporate", "2": "mode-college", "3": "mode-school" };
+        const LEVEL_NAMES = { "1": "Corporate", "2": "College", "3": "School" };
+
         function selectMode(mode, level) {
-            selectedMode = mode;
+            level = String(level).replace('-', '');
+            if (!LEVEL_CARDS[level]) level = "2";
+            selectedMode = LEVEL_NAMES[level] || mode;
             selectedStrictness = level;
+            Object.entries(LEVEL_CARDS).forEach(([lvl, id]) => {
+                const card = document.getElementById(id);
+                card.classList.toggle('is-selected', lvl === level);
+                card.querySelector('.tag').classList.toggle('tag-quiet', lvl !== level);
+            });
+            // Banner and chime don't block anything, so only Level 1 offers them
+            const select = document.getElementById('frictionStyleSelect');
+            const soft = level === "1";
+            // Level 1 reminds with a notification (or a sound) and never pops up; Levels 2 and 3 always pop up
+            const full = select.querySelector('option[value="fullscreen"]');
+            full.disabled = soft;
+            full.textContent = soft ? "Intention check (Levels 2 and 3)" : "Intention check (recommended)";
+            select.querySelector('option[value="banner"]').textContent = soft ? "Notification (recommended)" : "Notification (Level 1 only)";
+            select.querySelector('option[value="chime"]').textContent = soft ? "Sound only" : "Sound only (Level 1 only)";
+            select.querySelectorAll('option[value="banner"], option[value="chime"]').forEach(o => { o.disabled = !soft; });
+            if (!soft) select.value = "fullscreen";
+            else if (select.value === "fullscreen") select.value = "banner";
+            document.getElementById('frictionStyleHint').textContent = soft
+                ? "A notification reminds you every minute while you stay on a drift app. No popup, nothing is locked. After 3 ignored reminders they also play a sound."
+                : "Levels 2 and 3 always use the intention check.";
+            updateStyleTest();
+        }
+
+        // Level 1 banner/chime: a "Test" button so you know it works before the session starts
+        function updateStyleTest() {
+            const style = document.getElementById('frictionStyleSelect').value;
+            document.getElementById('styleTestBtn').classList.toggle('hidden', !(style === 'banner' || style === 'chime'));
+            document.getElementById('styleTestResult').classList.add('hidden');
+        }
+
+        async function testSoftReminder() {
+            const style = document.getElementById('frictionStyleSelect').value;
+            const out = document.getElementById('styleTestResult');
+            // Windows: if notifications are off, offer to switch them on right here (no trip to Settings)
+            if (style === 'banner') await dsPermissions.ensureNotifications();
+            let res = null;
+            try { res = await window.pywebview.api.test_soft_reminder(style); } catch (e) {}
+            out.classList.remove('hidden');
+            if (!res || !res.success) {
+                out.className = 'text-xs mt-2 text-coral';
+                out.textContent = style === 'banner'
+                    ? "Notifications aren't available on this computer, so DriftSync will play a sound instead."
+                    : "Couldn't play a sound on this computer. Try Notification instead.";
+                return;
+            }
+            out.className = 'text-xs mt-2 muted';
+            if (style === 'chime') {
+                out.textContent = "Did you hear it? If not, check your volume. This sound plays when you drift.";
+            } else {
+                out.innerHTML = 'A notification should appear in the corner of your screen. Didn\'t see it? '
+                    + (res.isMac ? 'Allow notifications for <b>Script Editor</b>'
+                       : res.isWindows ? 'Do not disturb / Focus may be on (click the clock, bottom right). Or allow <b>Windows PowerShell</b>'
+                       : 'Turn on notifications')
+                    + (res.canOpenSettings ? ' in <a href="#" onclick="openNotifSettings(event)" class="text-sand underline">Notification settings</a>.' : '.');
+            }
+        }
+
+        async function openNotifSettings(e) {
+            e.preventDefault();
+            try { await window.pywebview.api.open_notification_settings(); } catch (err) {}
         }
 
         function setDuration(mins, btnElement) {
@@ -228,6 +407,7 @@
         }
 
         async function launchSession() {
+            if (!(await sessionWarnings())) return;
             const activeBadges = Array.from(document.querySelectorAll('.badge-active')).map(b => b.innerText.trim());
             // "netflix.com, hulu.com" becomes two entries instead of one that never matches
             document.getElementById('customAppInput').value.split(',')
@@ -242,17 +422,30 @@
                 shortBreak: parseFloat(document.getElementById('shortBreakSelect').value),
                 longBreak: parseFloat(document.getElementById('longBreakSelect').value),
                 smartYouTube: document.getElementById('smartYouTubeToggle').checked,
+                deskCheck: document.getElementById('deskCheckToggle').checked,
+                deskAwaySec: parseInt(document.getElementById('deskAwaySelect').value, 10),
+                frictionStyle: document.getElementById('frictionStyleSelect').value,
                 blocklist: activeBadges
             };
 
+            stopDeskPreview();
             try {
                 await window.pywebview.api.save_session_config(sessionConfig);
             } catch(e){}
 
-            window.location.href = 'index.html';
+            (window.dsGo || (u => { window.location.href = u; }))('index.html');
         }
 
         // Demo mode (DEMO_MODE=1 in .env): adds a 1-minute focus block and 30-second / 1-minute breaks
+        function deskAwayLabel() {
+            const sel = document.getElementById('deskAwaySelect');
+            return sel.options[sel.selectedIndex].text;
+        }
+        function updateDeskAwayText() {
+            document.getElementById('deskAwayText').textContent =
+                `Away for ${deskAwayLabel()}: the timer pauses and the alarm rings until you're back.`;
+        }
+
         let demoApplied = false;
         async function applyDemoMode() {
             if (demoApplied) return;
@@ -260,6 +453,18 @@
             try { cfg = await window.pywebview.api.get_session_config(); } catch (e) { return; }
             demoApplied = true;
             if (cfg && typeof cfg.smartYouTube === 'boolean') document.getElementById('smartYouTubeToggle').checked = cfg.smartYouTube;
+            if (cfg && typeof cfg.deskCheck === 'boolean') document.getElementById('deskCheckToggle').checked = cfg.deskCheck;
+            if (cfg && cfg.deskAwaySec) {
+                const awayOpt = document.querySelector(`#deskAwaySelect option[value="${cfg.deskAwaySec}"]`);
+                if (awayOpt) document.getElementById('deskAwaySelect').value = String(cfg.deskAwaySec);
+                updateDeskAwayText();
+            }
+            if (cfg && cfg.strictness) selectMode(cfg.mode, cfg.strictness);   // reopen Setup on the level you used last
+            if (cfg && cfg.frictionStyle) {
+                const opt = document.querySelector(`#frictionStyleSelect option[value="${cfg.frictionStyle}"]`);
+                if (opt && !opt.disabled) document.getElementById('frictionStyleSelect').value = cfg.frictionStyle;
+                updateStyleTest();
+            }
             if (!cfg || !cfg.demoMode) return;
             document.getElementById('demoBadge').classList.remove('hidden');
             const seg = document.getElementById('durationSeg');
@@ -272,6 +477,139 @@
             setDuration(1, seg.querySelector('.dur-btn'));
         }
 
+        // Warnings before a session starts: empty blocklist, very long focus block
+        async function sessionWarnings() {
+            const anyBlocked = document.querySelectorAll('.badge-active').length > 0
+                || document.getElementById('customAppInput').value.split(',').some(x => x.trim());
+            if (!anyBlocked) {
+                const go = await askUser({
+                    title: "Your drift list is empty",
+                    points: ["Nothing will be blocked during this session.", "Add apps like Instagram or YouTube above, or start anyway."],
+                    ok: "Start anyway", cancel: "Go back",
+                });
+                if (!go) return false;
+            }
+            if (parseFloat(selectedDuration) >= 60) {
+                const go = await askUser({
+                    title: `Are you sure about ${selectedDuration} minutes?`,
+                    points: ["Long focus blocks are hard to sustain. Most people focus best in 25 to 45 minute blocks with short breaks.",
+                             "You can still pick a shorter block."],
+                    ok: "Yes, I'm sure", cancel: "Pick shorter",
+                });
+                if (!go) return false;
+            }
+            return true;
+        }
+
+        // Desk check camera test: the camera stays on only while this keeps asking for frames
+        let deskPreviewTimer = null;
+        let deskPreviewStopAt = 0;
+        // Turning Desk check on asks for the camera right away (the system's own OK / Cancel prompt)
+        let cameraAllowed = false;
+        async function askForCamera() {
+            if (cameraAllowed) return true;
+            const status = document.getElementById('deskTestStatus');
+            // macOS: the system's own prompt. Windows: an in-app message that explains and opens the one switch.
+            cameraAllowed = await dsPermissions.ensureCamera(t => { status.innerText = t; });
+            return cameraAllowed;
+        }
+
+        async function onDeskToggle(box) {
+            if (!box.checked) return;
+            box.disabled = true;
+            const ok = await deskWarnings() && await askForCamera();
+            box.disabled = false;
+            if (!ok) box.checked = false;
+        }
+
+        // Warnings before Desk check turns on: what it does (first time only) and battery (whenever unplugged)
+        async function deskWarnings() {
+            const api = window.pywebview.api;
+            let seen = false;
+            try { seen = !!(await api.get_pref("deskIntroSeen")); } catch (e) {}
+            const pinfo = await dsPermissions.info();
+            const loud = pinfo.os === "windows"
+                ? (pinfo.canRaiseVolume ? "a loud alarm rings and your PC is unmuted and turned up to 100% until you're back (then put back)."
+                                        : "a loud alarm rings until you're back (keep your PC's sound on).")
+                : "a loud alarm rings and your Mac's volume is turned up to 100% until you're back.";
+            if (!seen) {
+                const yes = await askUser({
+                    title: "Before you turn on Desk check",
+                    points: [
+                        "Privacy: your camera stays on during focus blocks and its light will be on. Nothing is recorded, saved or sent anywhere.",
+                        "Loud alarm: if you leave your desk for longer than your allowed time away (" + deskAwayLabel() + "), " + loud + " Use headphones or warn people nearby.",
+                    ],
+                    ok: "Turn on", cancel: "Cancel",
+                });
+                if (!yes) return false;
+                try { await api.set_pref("deskIntroSeen", true); } catch (e) {}
+            }
+            let power = null;
+            try { power = await api.get_power_state(); } catch (e) {}
+            if (power && power.onBattery) {
+                return askUser({
+                    title: "You're on battery",
+                    points: [
+                        "Desk check uses the camera for the whole focus block and can drain your battery faster.",
+                        "We recommend plugging in while you use it.",
+                    ],
+                    ok: "Turn on anyway", cancel: "Cancel",
+                });
+            }
+            return true;
+        }
+
+        async function toggleDeskPreview() {
+            if (deskPreviewTimer) return stopDeskPreview();
+            if (!(await askForCamera())) return;
+            document.getElementById('deskPreviewWrap').classList.remove('hidden');
+            document.getElementById('deskTestBtn').innerText = "Stop camera";
+            document.getElementById('deskTestStatus').innerText = "Starting camera…";
+            deskPreviewStopAt = Date.now() + 60000;   // turns itself off after a minute
+            deskPreviewTimer = setInterval(updateDeskPreview, 1000 / 15);   // 15 frames a second
+            updateDeskPreview();
+        }
+
+        function stopDeskPreview() {
+            clearInterval(deskPreviewTimer);
+            deskPreviewTimer = null;
+            document.getElementById('deskPreviewWrap').classList.add('hidden');
+            document.getElementById('deskPreview').removeAttribute('src');
+            document.getElementById('deskTestBtn').innerText = "Test camera";
+            document.getElementById('deskTestStatus').innerText = "";
+        }
+
+        let deskPreviewBusy = false;
+        async function updateDeskPreview() {
+            if (Date.now() > deskPreviewStopAt) return stopDeskPreview();
+            if (deskPreviewBusy) return;
+            deskPreviewBusy = true;
+            let r = null;
+            try { r = await window.pywebview.api.get_desk_preview(); } catch (e) {}
+            deskPreviewBusy = false;
+            if (!deskPreviewTimer || !r) return;
+            const status = document.getElementById('deskTestStatus');
+            if (!r.ok || r.error) {
+                status.innerText = r.error || "Camera not available.";
+                return;
+            }
+            if (r.image) document.getElementById('deskPreview').src = r.image;
+            status.classList.toggle('text-coral', !!(r.image && r.tooDark));
+            status.innerText = !r.image ? "Starting camera…"
+                : r.tooDark ? "Too dark for the camera to see you. Turn on a light, or the alarm may go off while you're sitting there."
+                : r.faces > 0 ? `Face found ✓ (green box). You count as at your desk.`
+                : "No face found. Sit where you normally work, facing the screen.";
+        }
+
+        // Level 3: while a focus block is locked, this page can't be used. Back to the timer.
+        async function strictGuard() {
+            try {
+                const s = await window.pywebview.api.get_strict_block();
+                if (s && s.active) window.location.replace('index.html');
+            } catch (e) {}
+        }
+        window.addEventListener('pywebviewready', strictGuard);
+        setTimeout(strictGuard, 300);
         window.addEventListener('pywebviewready', () => { initUserBadge(); applyDemoMode(); });
         setTimeout(() => { initUserBadge(); applyDemoMode(); }, 300);
     </script>
