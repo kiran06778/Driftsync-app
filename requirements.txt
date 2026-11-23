@@ -1,4 +1,8 @@
-pywebview>=5.0.0
-certifi
-psutil>=5.9.0
+# DriftSync needs Python 3.9 or newer, on macOS 11+ or Windows 10/11.
+# Check a computer first with:  python3 check_setup.py
+pywebview>=5.0,<7; sys_platform != "win32"   # the app window (macOS: WebKit)
+pywebview>=6.0,<7; sys_platform == "win32"   # Windows: Edge WebView2 (6.x fixes window scaling and transparency)
+psutil>=5.9,<8         # Windows window detection, battery and memory checks
+certifi                # HTTPS certificates for the AI coach on any Python install
 # optional, only for the Gemini backup coach:  pip3 install google-genai
+opencv-python>=4.8,<5; platform_machine != "ARM64"  # Desk check (webcam, on this computer only). Optional. No build for Windows on ARM yet
