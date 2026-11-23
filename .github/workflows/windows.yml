@@ -6,6 +6,9 @@ on:
     branches: ["windows-test/**"]
   workflow_dispatch:
 
+permissions:
+  contents: write   # to save the screenshots back to this test branch
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -38,6 +41,18 @@ jobs:
           Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
           Get-Content app.log, app.err -ErrorAction SilentlyContinue
           if (-not $alive) { Write-Error "DriftSync exited during start-up"; exit 1 }
+      - name: Screenshots of every page in the real Windows window
+        run: python tests\windows_screens.py
+      - name: Save screenshots to the branch
+        if: matrix.python == '3.13'
+        shell: bash
+        run: |
+          cp launch.png windows-run/0-launch.png || true
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -f windows-run/*.png
+          git commit -m "Windows screenshots from run ${{ github.run_id }} [skip ci]" || exit 0
+          git push origin HEAD:${{ github.ref_name }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
