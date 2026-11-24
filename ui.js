@@ -285,3 +285,78 @@
         if (!g.active) { g.active = true; requestAnimationFrame(() => run(el, g)); }
     }, { passive: false });
 })();
+
+
+// ---------- Terminal: a small button on every page (Ctrl/Cmd + ` too) that shows what the app prints, live ----------
+(function () {
+    const skip = /(friction|grace|alarm)\.html$/.test(location.pathname);
+    if (skip) return;
+    const api = () => (window.pywebview && window.pywebview.api) || null;
+    let panel, box, btn, timer = null, seen = 0, open = false;
+
+    function build() {
+        if (btn) return;
+        const css = document.createElement('style');
+        css.textContent = `
+        #ds-term-btn{position:fixed;right:14px;bottom:14px;z-index:9990;width:34px;height:34px;border-radius:10px;border:1px solid var(--line-2,rgba(128,128,128,.3));
+            background:var(--surface-2,#222);color:var(--text,#eee);font:600 13px ui-monospace,Menlo,Consolas,monospace;cursor:pointer;opacity:.75}
+        #ds-term-btn:hover,#ds-term-btn.on{opacity:1}
+        #ds-term{position:fixed;left:14px;right:56px;bottom:14px;height:230px;z-index:9991;display:none;flex-direction:column;border-radius:12px;overflow:hidden;
+            background:#0b0d12;color:#cfe3d4;border:1px solid rgba(255,255,255,.12);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+        #ds-term.on{display:flex}
+        #ds-term header{display:flex;align-items:center;gap:8px;padding:6px 10px;font:600 12px system-ui,sans-serif;background:rgba(255,255,255,.06)}
+        #ds-term header span{flex:1}
+        #ds-term header button{border:0;background:rgba(255,255,255,.1);color:inherit;border-radius:6px;padding:3px 9px;font:12px system-ui,sans-serif;cursor:pointer}
+        #ds-term pre{flex:1;margin:0;padding:10px 12px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}`;
+        document.head.appendChild(css);
+        btn = document.createElement('button');
+        btn.id = 'ds-term-btn'; btn.type = 'button'; btn.textContent = '>_';
+        btn.title = 'Show or hide the terminal (Ctrl/Cmd + `)';
+        btn.onclick = () => toggle();
+        panel = document.createElement('div');
+        panel.id = 'ds-term';
+        panel.innerHTML = '<header><span>Terminal: what DriftSync is doing</span><button type="button" data-clear>Clear</button><button type="button" data-close>Hide</button></header><pre></pre>';
+        box = panel.querySelector('pre');
+        panel.querySelector('[data-clear]').onclick = () => { box.textContent = ''; };
+        panel.querySelector('[data-close]').onclick = () => toggle(false);
+        document.body.appendChild(panel);
+        document.body.appendChild(btn);
+    }
+
+    async function poll() {
+        const a = api(); if (!a || !a.get_log) return;
+        let r = null;
+        try { r = await a.get_log(seen); } catch (e) {}
+        if (!r) return;
+        if (r.lines.length) {
+            const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 30;
+            box.textContent += r.lines.join('\n') + '\n';
+            if (box.textContent.length > 60000) box.textContent = box.textContent.slice(-40000);
+            if (atEnd) box.scrollTop = box.scrollHeight;
+        }
+        seen = r.total;
+    }
+
+    function toggle(force, save) {
+        open = typeof force === 'boolean' ? force : !open;
+        build();
+        panel.classList.toggle('on', open);
+        btn.classList.toggle('on', open);
+        clearInterval(timer); timer = null;
+        if (open) { seen = 0; box.textContent = ''; poll(); timer = setInterval(poll, 1000); }
+        if (save !== false) { try { api().set_pref('showTerminal', open); } catch (e) {} }
+    }
+
+    async function init() {
+        if (!api() || !api().get_log) return;   // only inside the app (not the browser Insights copy)
+        build();
+        let on = false;
+        try { on = !!(await api().get_pref('showTerminal')); } catch (e) {}
+        if (on) toggle(true, false);
+    }
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === '`' && api() && api().get_log) { e.preventDefault(); toggle(); }
+    });
+    window.addEventListener('pywebviewready', init);
+    if (window.pywebview) init();
+})();

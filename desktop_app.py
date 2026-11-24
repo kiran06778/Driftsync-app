@@ -18,6 +18,44 @@ for _stream in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
+# Everything the app prints is also kept in memory, so Setup's "Show terminal" can display it live
+import collections as _collections
+_LOG_LINES = _collections.deque(maxlen=600)
+_LOG_COUNT = [0]
+
+
+class _Tee:
+    def __init__(self, real):
+        self._real = real
+        self._buf = ""
+
+    def write(self, text):
+        try:
+            self._buf += str(text)
+            while "\n" in self._buf:
+                line, self._buf = self._buf.split("\n", 1)
+                _LOG_LINES.append(line)
+                _LOG_COUNT[0] += 1
+        except Exception:
+            pass
+        try:
+            return self._real.write(text)
+        except Exception:
+            return len(str(text))
+
+    def flush(self):
+        try:
+            self._real.flush()
+        except Exception:
+            pass
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
+sys.stdout = _Tee(sys.stdout)
+sys.stderr = _Tee(sys.stderr)
+
 import webview
 import platform_bridge
 import webbrowser
@@ -1572,6 +1610,14 @@ class Api:
         st = platform_bridge.enable_notifications()
         print(f"[NOTIFY] Notifications {'on' if st.get('enabled') is not False else 'still off'} after the in-app switch.", flush=True)
         return st
+
+    def get_log(self, since=0):
+        """Setup's "Show terminal": the app's printed output. Returns lines newer than `since` (a running count)."""
+        total = _LOG_COUNT[0]
+        keep = list(_LOG_LINES)
+        first = total - len(keep)          # count of the oldest line still kept
+        start = max(int(since or 0), first)
+        return {"total": total, "lines": keep[start - first:]}
 
     def get_pref(self, key):
         try:
