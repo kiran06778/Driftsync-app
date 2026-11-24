@@ -60,8 +60,17 @@ def _mac_check_permissions():
         return False
 
 
+_perm_modal_shown = False
+_cam_modal_shown = False
+
+
 def _mac_permission_modal():
-    """Short OK / Cancel. OK opens the Accessibility settings page."""
+    """Short OK / Cancel. OK opens the Accessibility settings page. Shown once per run: pressing Start again
+    after a Cancel must not pop it up every time (the page shows a one-line hint instead)."""
+    global _perm_modal_shown
+    if _perm_modal_shown:
+        return
+    _perm_modal_shown = True
     app = _host_app_name().replace('"', '')
     modal_script = f'''
     tell application "System Events"
@@ -587,7 +596,12 @@ def _camera_probe():
 
 
 def _mac_camera_denied_dialog():
-    """Camera was refused earlier, so macOS won't ask again: our own OK / Cancel opens the right settings page."""
+    """Camera was refused earlier, so macOS won't ask again: our own OK / Cancel opens the right settings page.
+    Shown once per run."""
+    global _cam_modal_shown
+    if _cam_modal_shown:
+        return
+    _cam_modal_shown = True
     app = _host_app_name().replace('"', '')
     script = f'''
     tell application "System Events"

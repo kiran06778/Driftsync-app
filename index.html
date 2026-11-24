@@ -496,13 +496,17 @@
             }
             if (config.deskCheck && window.dsPermissions) {
                 const p = await dsPermissions.info(true);
-                if (p.os === "windows" && p.cameraPrivacy && p.cameraPrivacy !== "ok") {
-                    // the camera was switched off in Windows since Setup: ask now, not after the alarm misfires
+                let askedBefore = false;
+                try { askedBefore = sessionStorage.getItem("deskCamAsked") === "1"; } catch (e) {}
+                if (p.os === "windows" && p.cameraPrivacy && p.cameraPrivacy !== "ok" && !askedBefore) {
+                    // the camera was switched off in Windows since Setup: ask once per run, not on every Start
+                    try { sessionStorage.setItem("deskCamAsked", "1"); } catch (e) {}
                     if (!(await dsPermissions.ensureCamera(t => setStatus(t)))) {
-                        const go = await askUser({ title: "Start without the desk check?",
-                                                   points: ["The camera is still off, so DriftSync can't see whether you're at your desk."],
-                                                   ok: "Start anyway", cancel: "Not now" });
-                        if (!go) return false;
+                        const go = await askUser({ title: "Camera is off: start without the desk check?",
+                                                   points: ["DriftSync can't see whether you're at your desk without the camera.",
+                                                            "Level 1 (Gentle) needs no camera. You can pick it in Setup."],
+                                                   ok: "Start anyway", cancel: "Choose Level 1 in Setup" });
+                        if (!go) { (window.dsGo || (u => { window.location.href = u; }))('setup.html'); return false; }
                     }
                 }
             }
@@ -531,6 +535,10 @@
                 setStatus(p.os === "mac" ? "Allow Accessibility access for DriftSync, then press Start again."
                                          : "The timer couldn't start. Press Start again.");
                 return;
+            }
+            if (window.dsPermissions) {   // Accessibility refused: the timer works, app blocking doesn't
+                const pi = await dsPermissions.info(true);
+                if (pi.blockingAvailable === false) setStatus("Timer running. App blocking is off because Accessibility isn't allowed. You can allow it any time and press Start again.");
             }
             const fresh = !sessionStartMs;
             if (!sessionStartMs) sessionStartMs = Date.now();

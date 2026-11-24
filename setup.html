@@ -339,7 +339,7 @@
             const style = document.getElementById('frictionStyleSelect').value;
             const out = document.getElementById('styleTestResult');
             // Windows: if notifications are off, offer to switch them on right here (no trip to Settings)
-            if (style === 'banner') await dsPermissions.ensureNotifications();
+            if (style === 'banner') await dsPermissions.ensureNotifications(true);
             let res = null;
             try { res = await window.pywebview.api.test_soft_reminder(style); } catch (e) {}
             out.classList.remove('hidden');
@@ -519,7 +519,13 @@
             box.disabled = true;
             const ok = await deskWarnings() && await askForCamera();
             box.disabled = false;
-            if (!ok) box.checked = false;
+            if (!ok) {
+                box.checked = false;
+                // Camera refused: suggest Level 1, which needs no camera
+                if (selectedStrictness !== "1" && await dsPermissions.offerLevel1("Without the camera the desk check can't run.")) {
+                    selectMode("Corporate", "1");
+                }
+            }
         }
 
         // Warnings before Desk check turns on: what it does (first time only) and battery (whenever unplugged)
@@ -608,6 +614,7 @@
                 if (s && s.active) window.location.replace('index.html');
             } catch (e) {}
         }
+
         window.addEventListener('pywebviewready', strictGuard);
         setTimeout(strictGuard, 300);
         window.addEventListener('pywebviewready', () => { initUserBadge(); applyDemoMode(); });

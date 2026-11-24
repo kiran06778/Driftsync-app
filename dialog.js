@@ -133,12 +133,17 @@
         return false;
     }
 
-    async function ensureNotifications() {
+    // `force` is true only when the user pressed a Test button: otherwise a "Use sound only" answer is remembered
+    // and DriftSync never asks again (reminders just chime).
+    async function ensureNotifications(force) {
         const a = api();
         if (!a) return true;
         const p = await info(true);
         const st = p.notifications || {};
         if (st.enabled !== false) return true;   // on, or this OS can't tell (macOS: the Test button shows it)
+        let declined = false;
+        try { declined = !!(await a.get_pref("notifDeclined")); } catch (e) {}
+        if (declined && !force) return false;
         const go = await askUser({
             title: "Notifications are turned off",
             points: [st.reason === "all-off"
@@ -147,12 +152,24 @@
                      "DriftSync can switch them back on for you right now. (If you'd rather not, reminders play a sound instead.)"],
             ok: "Turn on notifications", cancel: "Use sound only",
         });
-        if (!go) return false;
+        if (!go) { try { await a.set_pref("notifDeclined", true); } catch (e) {} return false; }
+        try { await a.set_pref("notifDeclined", false); } catch (e) {}
         let after = null;
         try { after = await a.enable_notifications(); } catch (e) {}
         await info(true);
         return !!(after && after.enabled !== false);
     }
 
-    window.dsPermissions = { info, ensureCamera, ensureNotifications };
+    // When someone says no to the camera, point them at the level that needs nothing extra.
+    // Resolves true when they accept (the caller then switches to Level 1).
+    async function offerLevel1(why) {
+        return askUser({
+            title: "Try Level 1 (Gentle) instead?",
+            points: [why || "The desk check needs the camera.",
+                     "Level 1 only sends a notification when you drift. It needs no camera and no pop-ups, and you can turn the desk check on later."],
+            ok: "Use Level 1", cancel: "No thanks",
+        });
+    }
+
+    window.dsPermissions = { info, ensureCamera, ensureNotifications, offerLevel1 };
 })();

@@ -892,6 +892,8 @@ def monitor_loop():
         if not blocklist:
             continue  # nothing to block, skip the window scan entirely
 
+        if platform_bridge.IS_MAC and not permission_ok:
+            continue  # no Accessibility: can't read window titles, so nothing to block (the timer still runs)
         raw_window_info = get_active_window_info()
         if raw_window_info:
             if raw_window_info != last_scan:   # log changes only, not every 1.5 seconds
@@ -1317,8 +1319,8 @@ class Api:
 
         if is_running and session_type == "FOCUS":
             if not check_macos_permissions():
-                print("⚠️ [PERMISSION REQUIRED] macOS Accessibility popup triggered.", flush=True)
-                return False
+                # Accessibility refused: the timer and everything else still work, only app blocking is off
+                print("⚠️ [PERMISSION] Accessibility not allowed: timer runs, app blocking is off.", flush=True)
 
         if is_running and session_type == "FOCUS":
             desk.update(hold=False, last_seen=time.time(), warned=False, logged=False)   # fresh grace on start/resume
@@ -1558,6 +1560,7 @@ class Api:
             "canRaiseVolume": platform_bridge.can_raise_volume(),
             "notifications": platform_bridge.notification_status(),
             "cameraPrivacy": platform_bridge.win_camera_privacy(),
+            "blockingAvailable": bool(permission_ok or not platform_bridge.IS_MAC),
             "openCv": bool(presence_check is not None and presence_check.available()),
         }
 
