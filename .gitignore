@@ -22,3 +22,6 @@ dashboard_live.html
 
 # The running Level 3 block (so it survives a force quit)
 strict_block.json
+
+# DriftSync output when started from the Windows shortcut
+logs/

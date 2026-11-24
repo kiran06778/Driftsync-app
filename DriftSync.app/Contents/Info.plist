@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>DriftSync</string>
+	<key>CFBundleDisplayName</key>
+	<string>DriftSync</string>
+	<key>CFBundleIdentifier</key>
+	<string>app.driftsync.focus</string>
+	<key>CFBundleExecutable</key>
+	<string>DriftSync</string>
+	<key>CFBundleIconFile</key>
+	<string>DriftSync</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>11.0</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>DriftSync uses the camera only for the desk check, to see if you are at your desk. Video never leaves this Mac.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>DriftSync reads the front window and browser tab to spot distractions during a focus session.</string>
+</dict>
+</plist>

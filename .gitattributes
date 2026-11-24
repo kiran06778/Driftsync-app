@@ -1,3 +1,7 @@
 # Windows cmd.exe misreads batch files with Unix line endings (labels and goto break)
 *.bat text eol=crlf
 *.command text eol=lf
+*.vbs text eol=crlf
+*.icns binary
+*.ico binary
+DriftSync.app/Contents/MacOS/* text eol=lf

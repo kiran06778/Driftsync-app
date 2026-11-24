@@ -567,6 +567,8 @@ _camera_granted = False
 
 def _host_app_name():
     """The app macOS gives the camera permission to: the one DriftSync was started from."""
+    if os.environ.get("DRIFTSYNC_LAUNCHER") == "app":
+        return "DriftSync"   # opened with DriftSync.app
     term = os.environ.get("TERM_PROGRAM", "")
     return {"Apple_Terminal": "Terminal", "vscode": "Visual Studio Code", "iTerm.app": "iTerm"}.get(term, term or "Terminal")
 
@@ -757,6 +759,39 @@ def inform(title, message, button="OK"):
     except Exception:
         pass
     return False
+
+
+def set_window_icon(window, ico_path):
+    """Windows: give a pywebview window the DriftSync icon (title bar, Alt+Tab, taskbar). pywebview always
+    uses python.exe's icon. Safe to call from any thread; does nothing on macOS (the Dock icon covers it)."""
+    if not IS_WINDOWS:
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+        form = getattr(window, "native", None)
+        if form is None or not os.path.exists(str(ico_path)):
+            return False
+        hwnd = int(form.Handle.ToInt64())
+        user32 = ctypes.WinDLL("user32", use_last_error=True)   # own handle: don't change shared argtypes
+        user32.LoadImageW.restype = wintypes.HANDLE
+        user32.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
+                                      ctypes.c_int, ctypes.c_int, wintypes.UINT]
+        user32.SendMessageW.restype = ctypes.c_ssize_t
+        user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        IMAGE_ICON, LR_LOADFROMFILE, WM_SETICON, ICON_SMALL, ICON_BIG = 1, 0x10, 0x80, 0, 1
+        SM_CXICON, SM_CYICON, SM_CXSMICON, SM_CYSMICON = 11, 12, 49, 50
+        done = False
+        for which, cx, cy in ((ICON_BIG, SM_CXICON, SM_CYICON), (ICON_SMALL, SM_CXSMICON, SM_CYSMICON)):
+            h = user32.LoadImageW(None, str(ico_path), IMAGE_ICON, user32.GetSystemMetrics(cx),
+                                  user32.GetSystemMetrics(cy), LR_LOADFROMFILE)
+            if h:
+                user32.SendMessageW(hwnd, WM_SETICON, which, h)
+                done = True
+        return done
+    except Exception as e:
+        print(f"[APP ICON] window icon not set: {e}", flush=True)
+        return False
 
 
 def idle_seconds():

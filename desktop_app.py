@@ -1,4 +1,16 @@
 import sys
+# Started from the DriftSync shortcut on Windows (pythonw, no console): there is nowhere to print, so
+# everything goes to logs/DriftSync.log instead (the launcher shows its last lines if DriftSync fails)
+if sys.stdout is None or sys.stderr is None:
+    try:
+        import os as _os
+        _log_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "logs")
+        _os.makedirs(_log_dir, exist_ok=True)
+        _log = open(_os.path.join(_log_dir, "DriftSync.log"), "w", encoding="utf-8", errors="replace", buffering=1)
+        sys.stdout = sys.stdout or _log
+        sys.stderr = sys.stderr or _log
+    except Exception:
+        pass
 # Windows consoles default to cp1252 and crash on the emoji in our log lines
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -64,6 +76,48 @@ except Exception:
 # --- Global Paths ---
 BASE_DIR = Path(__file__).resolve().parent   # resolve(): works however the app was started (shortcut, other folder)
 DB_PATH = BASE_DIR / 'focusguard.db'
+ICON_DIR = BASE_DIR / "launcher" / "icons"
+
+
+def set_app_identity():
+    """Show DriftSync's own name and logo instead of Python's: the Dock icon and menu bar name on macOS,
+    the taskbar button on Windows (each window also gets the icon once shown, see set_window_icon)."""
+    try:
+        if platform_bridge.IS_MAC:
+            from Foundation import NSBundle
+            from AppKit import NSApplication, NSImage
+            bundle = NSBundle.mainBundle()
+            info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+            if info is not None:
+                info["CFBundleName"] = "DriftSync"   # menu bar shows "DriftSync", not "Python"
+            icon = ICON_DIR / "DriftSync-512.png"
+            if icon.exists():
+                image = NSImage.alloc().initWithContentsOfFile_(str(icon))
+                if image is not None:
+                    NSApplication.sharedApplication().setApplicationIconImage_(image)
+        elif platform_bridge.IS_WINDOWS:
+            import ctypes
+            # Its own taskbar group (with the window's icon) instead of being grouped under python.exe
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("DriftSync.App")
+    except Exception as e:
+        print(f"[APP ICON] could not set the app name/icon: {e}", flush=True)
+
+
+def _launcher_crash_hook(exc_type, exc, tb):
+    """Started from DriftSync.app there is no Terminal to show a crash, so say it in a dialog."""
+    import traceback
+    traceback.print_exception(exc_type, exc, tb)
+    try:
+        platform_bridge.inform("DriftSync stopped",
+                               f"DriftSync couldn't start: {exc_type.__name__}: {exc}\n\n"
+                               "The details are in Console > Log Reports > DriftSync.log "
+                               "(~/Library/Logs/DriftSync).")
+    except Exception:
+        pass
+
+
+if os.environ.get("DRIFTSYNC_LAUNCHER") == "app":
+    sys.excepthook = _launcher_crash_hook
 
 
 def load_env_file(path):
@@ -2120,6 +2174,7 @@ def _on_main_closed():
 
 
 if __name__ == '__main__':
+    set_app_identity()
     init_db()
     restore_strict_block()   # a Level 3 block that was running when DriftSync was force-quit
     api_instance = Api()
@@ -2204,6 +2259,15 @@ if __name__ == '__main__':
     except Exception as e:
         alarm_window = None
         print(f"[DESK CHECK] Full-screen alarm layer not available: {e}", flush=True)
+
+    if platform_bridge.IS_WINDOWS:
+        # pywebview gives every window python.exe's icon: swap in the DriftSync logo once each window exists
+        for _w in (main_window, friction_window, grace_window, alarm_window):
+            if _w:
+                try:
+                    _w.events.shown += (lambda w=_w: platform_bridge.set_window_icon(w, ICON_DIR / "DriftSync.ico"))
+                except Exception:
+                    pass
 
     try:
         friction_window.events.closing += _keep_alive_on_close(lambda: friction_window, _friction_closed_by_user)

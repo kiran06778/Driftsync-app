@@ -22,8 +22,18 @@ DriftSync is built to run on an ordinary student laptop.
 **Check a computer before a demo:** `python3 check_setup.py` (Windows: `python check_setup.py`). It lists what's
 OK and what to fix, in under a second, and changes nothing. The launchers run it automatically.
 
-**Easiest start:** double-click `DriftSync.command` (macOS) or `DriftSync.bat` (Windows). On a computer that's
-missing packages, they offer to install everything into a local `.venv` folder the first time.
+**Easiest start:**
+- **macOS:** double-click **`DriftSync.app`**. It opens like any Mac app, with its own icon and no Terminal window.
+  Drag it to the Dock to keep it there. The first time, if packages are missing, it offers to set them up in a
+  local `.venv` folder. Its output goes to `~/Library/Logs/DriftSync/DriftSync.log` (open it with Console).
+  If you move the app out of the DriftSync folder (for example into Applications), open it once from the folder
+  first, or it asks you to pick the folder once.
+- **Windows:** double-click **`DriftSync.bat`** the first time. It installs what's missing and puts a **DriftSync**
+  shortcut (with the DriftSync icon) on the Desktop and in the Start menu. From then on, open DriftSync from that
+  shortcut: no console window. To pin it, right-click the shortcut > Pin to taskbar. To make the shortcuts again,
+  double-click `launcher/Create shortcuts.vbs`.
+- To see everything DriftSync prints while it runs (troubleshooting): `launcher/Run in Terminal.command` on macOS,
+  `DriftSync.bat` on Windows.
 
 ---
 
@@ -58,7 +68,8 @@ python3 desktop_app.py
 1. Install Python 3.9+ (3.12 or 3.13 recommended) from python.org and tick "Add python.exe to PATH".
    Use the normal 64-bit (x64) installer, also on Windows-on-ARM laptops. Windows 10/11 already has the Edge
    WebView2 runtime the window needs; if it's missing, DriftSync says so and opens the download page.
-2. Double-click **`DriftSync.bat`**. The first time it offers to install everything into a `.venv` folder (type Y).
+2. Double-click **`DriftSync.bat`**. The first time it offers to install everything into a `.venv` folder (type Y),
+   then adds a DriftSync shortcut to the Desktop and the Start menu. Use that shortcut from then on.
    (By hand: `pip install -r requirements.txt`, then `python desktop_app.py`.)
 3. Optional: a `.env` file with `GROQ_API_KEY=...` for the AI coach. A file saved from Notepad as `.env.txt` works too.
 
@@ -77,7 +88,8 @@ The real-PC test list for Windows is in **`WINDOWS_TESTING.md`**. All OS-specifi
 
 > **macOS Note:** DriftSync asks for two permissions with a short OK / Cancel box: **Accessibility** (so the
 > background monitor can read the front window and intercept distraction apps) and **Camera** (only if you turn on
-> the desk check). Both are given to the app you start DriftSync from (Terminal, VS Code...).
+> the desk check). Both are given to the app you start DriftSync from: **DriftSync** when you open `DriftSync.app`,
+> otherwise Terminal, VS Code...
 
 ---
 

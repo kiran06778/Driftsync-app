@@ -137,4 +137,7 @@ These are read from `.env` at startup:
 - `theme.css`: shared styles.
 - `tests/test_level1.py`: automated checks for Level 1 (and that Levels 2 and 3 still use the popup). Run `python3 -m unittest discover tests -v`.
 - `dashboard_live.html`: a live copy of the dashboard that the app writes from the saved data.
-- `DriftSync.bat` and `DriftSync.command`: launchers for Windows and macOS.
+- `DriftSync.app` (macOS) and the `DriftSync` shortcut made by `launcher/Create shortcuts.vbs` (Windows, runs
+  `launcher/DriftSync.vbs` with `pythonw`): open DriftSync with its icon and no terminal window.
+  `DriftSync.bat` does the first-time setup on Windows; `launcher/Run in Terminal.command` shows the log live on macOS.
+  Icons are in `launcher/icons/` (`DriftSync.svg` is the source).

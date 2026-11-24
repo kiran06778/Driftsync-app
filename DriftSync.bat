@@ -1,5 +1,5 @@
 @echo off
-REM --- DriftSync launcher: double-click to start the app on Windows ---
+REM --- DriftSync first-time setup and troubleshooting (Windows). Day to day, use the DriftSync shortcut ---
 cd /d "%~dp0"
 
 REM Use a local virtual environment if one exists, otherwise the Python launcher (py) or python
@@ -29,6 +29,11 @@ set "PY=.venv\Scripts\python.exe"
 if errorlevel 1 goto still_broken
 
 :run
+REM First time it works: put DriftSync (with its icon) on the Desktop and in the Start menu
+if not exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\DriftSync.lnk" (
+    wscript //nologo "launcher\Create shortcuts.vbs" /quiet
+    echo DriftSync is now on your Desktop and in the Start menu. Next time, open it from there.
+)
 %PY% desktop_app.py
 if errorlevel 1 (
     echo.

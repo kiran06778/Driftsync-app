@@ -1,0 +1,142 @@
+#!/bin/bash
+# DriftSync.app: starts DriftSync like a normal Mac app (no Terminal window).
+#
+# 1. Finds the DriftSync folder: the folder this app sits in, or the one remembered from last time
+#    (so a copy in Applications or the Dock still works), or asks once.
+# 2. Picks a Python 3 that already has what DriftSync needs. If none has, it offers to set up a
+#    .venv inside the DriftSync folder (first run only).
+# 3. Starts desktop_app.py. Everything it prints goes to ~/Library/Logs/DriftSync/DriftSync.log
+#    (Console.app opens it). Problems are shown in normal macOS dialogs.
+
+BUNDLE="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ICON="$BUNDLE/Contents/Resources/DriftSync.icns"
+SUPPORT="$HOME/Library/Application Support/DriftSync"
+LOG_DIR="$HOME/Library/Logs/DriftSync"
+LOG="$LOG_DIR/DriftSync.log"
+mkdir -p "$SUPPORT" "$LOG_DIR"
+# Keep the log small: start over once it passes 2 MB
+if [ -f "$LOG" ] && [ "$(stat -f%z "$LOG" 2>/dev/null || echo 0)" -gt 2000000 ]; then : > "$LOG"; fi
+echo "" >> "$LOG"
+echo "=== DriftSync opened $(date '+%Y-%m-%d %H:%M:%S') ===" >> "$LOG"
+
+# Apps opened from Finder get a bare PATH; add the usual Python homes
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# dialog "message" "Button A,Button B"  -> prints the button that was clicked (last one is the default)
+dialog() {
+    /usr/bin/osascript - "$1" "$2" "$ICON" 2>/dev/null <<'OSA'
+on run argv
+    set msg to item 1 of argv
+    set AppleScript's text item delimiters to ","
+    set btns to text items of (item 2 of argv)
+    set AppleScript's text item delimiters to ""
+    try
+        set r to display dialog msg with title "DriftSync" buttons btns default button (count of btns) with icon ((POSIX file (item 3 of argv)) as alias)
+    on error number n
+        if n is -128 then return "Cancel"
+        try
+            set r to display dialog msg with title "DriftSync" buttons btns default button (count of btns) with icon note
+        on error
+            return "Cancel"
+        end try
+    end try
+    return button returned of r
+end run
+OSA
+}
+
+notify() {
+    /usr/bin/osascript - "$1" >/dev/null 2>&1 <<'OSA'
+on run argv
+    display notification (item 1 of argv) with title "DriftSync"
+end run
+OSA
+}
+
+show_log() { /usr/bin/open -a Console "$LOG" 2>/dev/null || /usr/bin/open -e "$LOG"; }
+
+# ---------- 1. The DriftSync folder ----------
+is_driftsync() { [ -n "$1" ] && [ -f "$1/desktop_app.py" ]; }
+
+ROOT=""
+PARENT="$(dirname "$BUNDLE")"
+SAVED="$(cat "$SUPPORT/folder" 2>/dev/null)"
+if is_driftsync "$PARENT"; then
+    ROOT="$PARENT"
+elif is_driftsync "$SAVED"; then
+    ROOT="$SAVED"
+else
+    ans="$(dialog "DriftSync can't find its folder (the one with desktop_app.py in it). This happens when the app is moved before it was opened once.
+
+Choose the DriftSync folder and it will be remembered." "Quit,Choose Folder")"
+    [ "$ans" = "Choose Folder" ] || exit 0
+    pick="$(/usr/bin/osascript -e 'POSIX path of (choose folder with prompt "Choose the DriftSync folder (it has desktop_app.py in it)")' 2>/dev/null </dev/null)"
+    pick="${pick%/}"
+    if is_driftsync "$pick"; then
+        ROOT="$pick"
+    else
+        [ -n "$pick" ] && dialog "That folder doesn't have desktop_app.py in it, so it isn't the DriftSync folder." "OK" >/dev/null
+        exit 1
+    fi
+fi
+printf '%s' "$ROOT" > "$SUPPORT/folder"
+cd "$ROOT" || exit 1
+echo "Folder: $ROOT" >> "$LOG"
+
+# ---------- 2. Python ----------
+VENVS=()
+for p in "$ROOT/.venv/bin/python3" "$ROOT/venv/bin/python3"; do
+    [ -x "$p" ] && VENVS+=("$p")
+done
+SYSTEM=()
+# The python3 that Terminal would use (Homebrew, python.org, pyenv...), read from the login shell
+shell_py="$(/bin/zsh -lc 'command -v python3' 2>/dev/null </dev/null)"
+[ -n "$shell_py" ] && [ -x "$shell_py" ] && SYSTEM+=("$shell_py")
+for p in /opt/homebrew/bin/python3 /usr/local/bin/python3 \
+         /Library/Frameworks/Python.framework/Versions/Current/bin/python3 "$HOME/.pyenv/shims/python3"; do
+    [ -x "$p" ] && SYSTEM+=("$p")
+done
+# Apple's /usr/bin/python3 only works once the Command Line Tools are installed (otherwise it opens an installer)
+/usr/bin/xcode-select -p >/dev/null 2>&1 && SYSTEM+=("/usr/bin/python3")
+
+PY=""
+for p in "${VENVS[@]}" "${SYSTEM[@]}"; do
+    if "$p" check_setup.py --quiet >> "$LOG" 2>&1; then PY="$p"; break; fi
+done
+
+if [ -z "$PY" ]; then
+    BASE=""
+    for p in "${SYSTEM[@]}"; do
+        if "$p" -c 'import sys; sys.exit(sys.version_info < (3, 9))' 2>/dev/null; then BASE="$p"; break; fi
+    done
+    if [ -z "$BASE" ]; then
+        ans="$(dialog "DriftSync needs Python 3.9 or newer, and this Mac doesn't have it yet.
+
+Install Python from python.org, then open DriftSync again." "Quit,Get Python")"
+        [ "$ans" = "Get Python" ] && /usr/bin/open "https://www.python.org/downloads/macos/"
+        exit 1
+    fi
+    ans="$(dialog "DriftSync needs to set itself up the first time it opens. This downloads about 150 MB and takes a few minutes.
+
+Everything goes into a .venv folder inside the DriftSync folder. Nothing else on your Mac changes." "Not Now,Set Up")"
+    [ "$ans" = "Set Up" ] || exit 0
+    notify "Setting up DriftSync. It opens by itself when it's ready."
+    echo "Setting up .venv with $BASE" >> "$LOG"
+    if "$BASE" -m venv .venv >> "$LOG" 2>&1 \
+        && .venv/bin/python3 -m pip install --upgrade pip -q >> "$LOG" 2>&1 \
+        && .venv/bin/python3 -m pip install -r requirements.txt >> "$LOG" 2>&1 \
+        && .venv/bin/python3 check_setup.py --quiet >> "$LOG" 2>&1; then
+        PY="$ROOT/.venv/bin/python3"
+    else
+        ans="$(dialog "DriftSync couldn't finish setting up. Check the internet connection and try again.
+
+The details are in the log." "Close,Show Log")"
+        [ "$ans" = "Show Log" ] && show_log
+        exit 1
+    fi
+fi
+
+# ---------- 3. Start ----------
+echo "Python: $PY" >> "$LOG"
+export DRIFTSYNC_LAUNCHER=app   # desktop_app shows its own dialog if it fails to start, and names DriftSync in permission prompts
+exec "$PY" desktop_app.py >> "$LOG" 2>&1

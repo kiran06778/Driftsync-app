@@ -1,8 +1,9 @@
 #!/bin/bash
-# --- DriftSync launcher: double-click in Finder to start the app ---
+# --- DriftSync in a Terminal window, for troubleshooting (you see everything it prints). ---
+# Day to day, open DriftSync.app instead.
 
-# Run from this script's own folder, so .env and focusguard.db are found
-cd "$(dirname "$0")" || exit 1
+# Run from the DriftSync folder (one level up), so .env and focusguard.db are found
+cd "$(dirname "$0")/.." || exit 1
 
 # Use a local virtual environment if one exists, otherwise the system Python 3
 if [ -x ".venv/bin/python3" ]; then
@@ -33,7 +34,6 @@ if ! "$PY" check_setup.py --quiet; then
     fi
 fi
 
-# Start the app (same as: python3 desktop_app.py)
 "$PY" desktop_app.py
 
 # Keep the window open if the app crashed, so the error can be read
