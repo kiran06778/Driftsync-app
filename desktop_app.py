@@ -1,16 +1,23 @@
 import sys
 # Started from the DriftSync shortcut on Windows (pythonw, no console): there is nowhere to print, so
 # everything goes to logs/DriftSync.log instead (the launcher shows its last lines if DriftSync fails)
+import os as _os
+_LOG_DIR = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "logs")
+_log = None
+try:
+    if __name__ != "__main__" and sys.stdout is not None:
+        raise RuntimeError("imported by the tests: leave the real log alone")
+    # Always keep a copy of what DriftSync prints in logs/DriftSync.log (also when started from DriftSync.bat),
+    # so a freeze or crash can be looked at afterwards
+    _os.makedirs(_LOG_DIR, exist_ok=True)
+    _log = open(_os.path.join(_LOG_DIR, "DriftSync.log"), "w", encoding="utf-8", errors="replace", buffering=1)
+except Exception:
+    _log = None
+_CONSOLE_OUT = sys.stdout is not None
 if sys.stdout is None or sys.stderr is None:
-    try:
-        import os as _os
-        _log_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "logs")
-        _os.makedirs(_log_dir, exist_ok=True)
-        _log = open(_os.path.join(_log_dir, "DriftSync.log"), "w", encoding="utf-8", errors="replace", buffering=1)
+    if _log is not None:
         sys.stdout = sys.stdout or _log
         sys.stderr = sys.stderr or _log
-    except Exception:
-        pass
 # Windows consoles default to cp1252 and crash on the emoji in our log lines
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -38,6 +45,11 @@ class _Tee:
                 _LOG_COUNT[0] += 1
         except Exception:
             pass
+        if _log is not None and self._real is not _log:
+            try:
+                _log.write(str(text))   # the copy in logs/DriftSync.log
+            except Exception:
+                pass
         try:
             return self._real.write(text)
         except Exception:
@@ -66,6 +78,7 @@ import json
 import hashlib
 import hmac
 import secrets
+import platform
 import threading
 import time
 import re
@@ -857,7 +870,7 @@ def trigger_friction_intercept(detected_item, raw_info="", insight=None):
         friction_window.load_url(friction_path.as_uri())
         friction_window.show()
         friction_window.restore()
-        friction_window.on_top = True
+        platform_bridge.set_on_top(friction_window, True)
 
         platform_bridge.bring_app_to_front(os.getpid())
     except Exception as e:
@@ -977,10 +990,10 @@ def show_alarm_overlay(on):
             return
         if on:
             alarm_window.show()
-            alarm_window.on_top = True
+            platform_bridge.set_on_top(alarm_window, True)
             platform_bridge.bring_app_to_front(os.getpid())
         else:
-            alarm_window.on_top = False
+            platform_bridge.set_on_top(alarm_window, False)
             alarm_window.hide()
     except Exception as e:
         print(f"Alarm overlay error: {e}", flush=True)
@@ -1384,7 +1397,7 @@ class Api:
             for win in ((friction_window,) if is_pause else (grace_window, friction_window)):
                 try:
                     if win:
-                        win.on_top = False
+                        platform_bridge.set_on_top(win, False)
                         win.hide()
                 except Exception:
                     pass
@@ -1474,7 +1487,7 @@ class Api:
             try:
                 if grace_window:
                     grace_window.show()
-                    grace_window.on_top = True
+                    platform_bridge.set_on_top(grace_window, True)
             except Exception as e:
                 print(f"Grace window error: {e}", flush=True)
 
@@ -1518,7 +1531,7 @@ class Api:
         is_friction_active = False
         last_friction_closed_at = time.time()
         try:
-            friction_window.on_top = False
+            platform_bridge.set_on_top(friction_window, False)
             friction_window.hide()
         except Exception:
             pass
@@ -1680,7 +1693,7 @@ class Api:
         last_friction_closed_at = time.time()
         try:
             if friction_window:
-                friction_window.on_top = False
+                platform_bridge.set_on_top(friction_window, False)
                 friction_window.hide()
         except Exception:
             pass
@@ -2199,6 +2212,47 @@ def _confirm_quit():
     return bool(ok)
 
 
+def start_hang_watch(window):
+    """Writes logs/hang-report.txt when DriftSync freezes, so the cause can be found afterwards.
+    Windows: if the window stops answering for 6 s, every Python thread's current line is written there.
+    Any system: if Python itself is stuck for 20 s, faulthandler (which needs no Python) writes it instead."""
+    import faulthandler
+    path = _os.path.join(_LOG_DIR, "hang-report.txt")
+    try:
+        report = open(path, "w", encoding="utf-8")
+    except Exception:
+        return
+
+    def _dump(why):
+        try:
+            report.write(f"\n===== {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {why} =====\n")
+            report.flush()
+            faulthandler.dump_traceback(file=report, all_threads=True)
+            report.flush()
+        except Exception:
+            pass
+
+    def _watch():
+        hung_since, reported = None, False
+        while not app_quitting:
+            faulthandler.dump_traceback_later(20, repeat=False, file=report)
+            time.sleep(2)
+            ok = platform_bridge.window_responding(window)
+            faulthandler.cancel_dump_traceback_later()
+            if ok is False:
+                hung_since = hung_since or time.time()
+                if not reported and time.time() - hung_since >= 6:
+                    reported = True
+                    _dump("the DriftSync window stopped responding")
+                    print(f"⚠️ [FREEZE] The window stopped responding. Details saved to {path}", flush=True)
+            elif ok:
+                if reported:
+                    print(f"[FREEZE] The window is responding again after {time.time() - hung_since:.0f} s.", flush=True)
+                hung_since, reported = None, False
+
+    threading.Thread(target=_watch, daemon=True, name="hang-watch").start()
+
+
 def _on_main_closed():
     global app_quitting, timer_is_running
     app_quitting = True
@@ -2223,6 +2277,11 @@ def _on_main_closed():
 
 
 if __name__ == '__main__':
+    print(f"[START] DriftSync starting: Python {sys.version.split()[0]}, {platform.platform()}, folder {BASE_DIR}", flush=True)
+    platform_bridge.disable_console_quick_edit()   # a click in the console window must not pause the app
+    if platform_bridge.IS_WINDOWS and "onedrive" in str(BASE_DIR).lower():
+        print("⚠️ [START] DriftSync is inside a OneDrive folder. OneDrive syncing can lock its files and slow it down: "
+              "if it freezes, move the folder somewhere like C:\\DriftSync.", flush=True)
     set_app_identity()
     init_db()
     restore_strict_block()   # a Level 3 block that was running when DriftSync was force-quit
@@ -2328,4 +2387,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"[WINDOW EVENTS] not available in this pywebview version: {e}", flush=True)
 
+    start_hang_watch(main_window)
+    print("[START] Opening the window.", flush=True)
     webview.start()

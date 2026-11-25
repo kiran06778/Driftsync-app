@@ -808,6 +808,88 @@ def set_window_icon(window, ico_path):
         return False
 
 
+def set_on_top(window, on_top):
+    """Keeps a pywebview window above other windows (or stops it). Safe from any thread.
+
+    On Windows pywebview sets the WinForms TopMost property straight from the calling thread. A .NET property
+    set through pythonnet keeps Python's GIL while Windows waits for the window's own (UI) thread, and that UI
+    thread needs the GIL to answer the page's calls: both wait for each other and the window shows
+    "Not Responding". So on Windows the change is handed to the UI thread with Invoke, which lets the GIL go."""
+    if window is None:
+        return False
+    on_top = bool(on_top)
+    if IS_WINDOWS:
+        form = getattr(window, "native", None)
+        if form is not None:
+            try:
+                from System import Func, Type
+
+                def _apply():
+                    form.TopMost = on_top
+
+                if form.InvokeRequired:
+                    form.Invoke(Func[Type](_apply))
+                else:
+                    _apply()
+                try:
+                    window._Window__on_top = on_top   # keep pywebview's own copy in step
+                except Exception:
+                    pass
+                return True
+            except Exception as e:
+                print(f"[WINDOW] could not change always-on-top: {e}", flush=True)
+                return False
+    window.on_top = on_top
+    return True
+
+
+def disable_console_quick_edit():
+    """Windows: started from DriftSync.bat, a click inside the black console window starts a text selection
+    ("Select" in its title) and Windows then pauses every program that prints to it, DriftSync included,
+    until Esc is pressed. Switch that click-to-select mode off for DriftSync's console."""
+    if not IS_WINDOWS:
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.GetStdHandle.restype = wintypes.HANDLE
+        handle = kernel32.GetStdHandle(-10)   # STD_INPUT_HANDLE
+        if not handle or handle == wintypes.HANDLE(-1).value:
+            return False
+        mode = wintypes.DWORD()
+        if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            return False   # no console (started from the shortcut)
+        ENABLE_QUICK_EDIT_MODE, ENABLE_EXTENDED_FLAGS = 0x0040, 0x0080
+        return bool(kernel32.SetConsoleMode(handle, (mode.value & ~ENABLE_QUICK_EDIT_MODE) | ENABLE_EXTENDED_FLAGS))
+    except Exception:
+        return False
+
+
+def window_responding(window, timeout_ms=3000):
+    """Windows: True when the window's UI thread answers within timeout_ms, False when it is hung,
+    None when it can't be checked (other systems, window not shown yet)."""
+    if not IS_WINDOWS:
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+        form = getattr(window, "native", None)
+        if form is None:
+            return None
+        hwnd = int(form.Handle.ToInt64())
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+        user32.SendMessageTimeoutW.restype = wintypes.LPARAM
+        user32.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
+                                               wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
+        result = ctypes.c_size_t()
+        WM_NULL, SMTO_ABORTIFHUNG = 0x0000, 0x0002
+        return bool(user32.SendMessageTimeoutW(hwnd, WM_NULL, 0, 0, SMTO_ABORTIFHUNG, int(timeout_ms),
+                                               ctypes.byref(result)))
+    except Exception:
+        return None
+
+
 def idle_seconds():
     """Seconds since the last keyboard or mouse input. The desk check uses it so typing with the
     camera blocked, or reading with your head down, still counts as being at the desk."""
