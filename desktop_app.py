@@ -209,6 +209,7 @@ VIDEO_MODEL = os.environ.get("VIDEO_MODEL", COACH_MODEL)
 BROWSE_ALLOWANCE_SEC = 30 if DEMO_MODE else 90
 
 # --- Tunables ---
+FRICTION_CLOSE_AFTER_UNLOCK_SEC = 2.0   # the popup closes this long after a break is approved
 SCAN_INTERVAL_SEC = 1.5     # how often the radar checks the frontmost window
 REARM_COOLDOWN_SEC = 4      # after the friction window closes, wait this long before it can pop again
 DRIFT_DEDUPE_SEC = 60       # staying on the same blocked app re-shows the modal but logs only one drift row
@@ -1526,7 +1527,14 @@ class Api:
         except Exception as e:
             print(f"Error updating drift unlock: {e}", flush=True)
 
-        # friction.html shows the green confirmation, then calls close_friction_window()
+        # friction.html shows the green confirmation, then closes the popup. Python closes it too, in case the
+        # page's timer doesn't run (seen on Windows: the popup stayed until "Back to focus" was clicked)
+        def _close_after_confirmation():
+            if not is_friction_active:   # not if a new drift has opened the popup again meanwhile
+                self.close_friction_window()
+        timer = threading.Timer(FRICTION_CLOSE_AFTER_UNLOCK_SEC, _close_after_confirmation)
+        timer.daemon = True
+        timer.start()
         return {"success": True, "message": "Verified!", "approved_grace": val}
 
     def mark_video_as_study(self):

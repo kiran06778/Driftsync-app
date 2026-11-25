@@ -198,3 +198,35 @@ class PopupCannotBeTossedAside(unittest.TestCase):
         src = (ROOT / "desktop_app.py").read_text(encoding="utf-8")
         self.assertIn("platform_bridge.cover_screen(friction_window)", src)
         self.assertIn("min-height:100vh", (ROOT / "friction.html").read_text(encoding="utf-8"))
+
+
+class PopupClosesAfterGrace(unittest.TestCase):
+    """Kiran, 2026-11-25 (Windows): after the grace period was approved the popup stayed until "Back to focus"."""
+
+    def test_python_closes_the_popup_after_a_grace_is_granted(self):
+        timers = []
+
+        class FakeTimer:
+            def __init__(self, delay, fn):
+                self.delay, self.fn, self.daemon = delay, fn, False
+                timers.append(self)
+
+            def start(self):
+                pass
+        api = app.Api()
+        with mock.patch.object(app.threading, "Timer", FakeTimer), \
+                mock.patch.object(app, "grace_window", None, create=True), \
+                mock.patch.object(app, "save_strict_block"), \
+                mock.patch.object(app, "db_connect", side_effect=Exception("no db in tests")), \
+                mock.patch.object(api, "close_friction_window") as close:
+            res = api._grant_unlock(2, "typed")
+            self.assertTrue(res["success"])
+            self.assertEqual(len(timers), 1)
+            timers[0].fn()
+            close.assert_called_once()
+            # a new drift reopened the popup before the timer ran: leave it open
+            close.reset_mock()
+            with mock.patch.object(app, "is_friction_active", True):
+                timers[0].fn()
+            close.assert_not_called()
+        app.grace_period_end = None
