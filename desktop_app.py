@@ -2249,6 +2249,11 @@ def start_hang_watch(window):
                 if reported:
                     print(f"[FREEZE] The window is responding again after {time.time() - hung_since:.0f} s.", flush=True)
                 hung_since, reported = None, False
+        faulthandler.cancel_dump_traceback_later()
+        try:
+            report.close()
+        except Exception:
+            pass
 
     threading.Thread(target=_watch, daemon=True, name="hang-watch").start()
 

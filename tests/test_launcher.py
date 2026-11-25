@@ -42,7 +42,7 @@ class MacApp(unittest.TestCase):
         self.assertNotIn(b"\r\n", exe.read_bytes(), "the Mac launcher needs Unix line endings")
         if os.name != "nt":
             self.assertTrue(os.access(exe, os.X_OK), "DriftSync.app/Contents/MacOS/DriftSync must be executable")
-        if shutil.which("bash"):
+        if shutil.which("bash") and os.name != "nt":   # Windows "bash" is often the WSL stub, not a real shell
             self.assertEqual(subprocess.run(["bash", "-n", str(exe)]).returncode, 0)
 
     def test_launcher_starts_desktop_app_with_the_launcher_flag(self):
