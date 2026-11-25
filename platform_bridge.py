@@ -843,6 +843,51 @@ def set_on_top(window, on_top):
     return True
 
 
+def cover_screen(window):
+    """Windows: the drift popup fills the whole screen with no title bar, so it can't be dragged aside
+    or shrunk to keep a video playing next to it. Safe from any thread. Other systems: nothing changes."""
+    if not IS_WINDOWS or window is None:
+        return False
+    form = getattr(window, "native", None)
+    if form is None:
+        return False
+    try:
+        from System import Func, Type
+        import System.Windows.Forms as WinForms
+
+        def _apply():
+            form.FormBorderStyle = getattr(WinForms.FormBorderStyle, "None")
+            form.WindowState = WinForms.FormWindowState.Maximized   # borderless + maximised covers the taskbar too
+
+        if form.InvokeRequired:
+            form.Invoke(Func[Type](_apply))
+        else:
+            _apply()
+        return True
+    except Exception as e:
+        print(f"[POPUP] could not make the popup full screen: {e}", flush=True)
+        return False
+
+
+def foreground_is_ours(pid):
+    """Windows: True when the window in front belongs to DriftSync (process pid), False when another app is
+    in front, None when it can't be told (other systems, nothing in front)."""
+    if not IS_WINDOWS:
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
+        hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            return None
+        owner = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+        return owner.value == int(pid)
+    except Exception:
+        return None
+
+
 def disable_console_quick_edit():
     """Windows: started from DriftSync.bat, a click inside the black console window starts a text selection
     ("Select" in its title) and Windows then pauses every program that prints to it, DriftSync included,

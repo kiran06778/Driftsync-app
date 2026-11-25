@@ -156,3 +156,45 @@ class DiagnosticsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PopupCannotBeTossedAside(unittest.TestCase):
+    """Kiran, 2026-11-25: on Windows the small popup could be dragged aside to keep watching the video."""
+
+    def test_switching_away_brings_the_popup_back_and_hides_the_video(self):
+        with mock.patch.object(pb, "IS_WINDOWS", True), \
+                mock.patch.object(pb, "foreground_is_ours", return_value=False), \
+                mock.patch.object(pb, "hide_app") as hide, \
+                mock.patch.object(pb, "bring_app_to_front") as front, \
+                mock.patch.dict(app.last_drift, {"front_app": "google chrome"}):
+            self.assertTrue(app.keep_popup_in_front())
+        hide.assert_called_once_with("google chrome")
+        front.assert_called_once()
+
+    def test_nothing_happens_while_the_popup_is_in_front(self):
+        with mock.patch.object(pb, "IS_WINDOWS", True), \
+                mock.patch.object(pb, "foreground_is_ours", return_value=True), \
+                mock.patch.object(pb, "bring_app_to_front") as front:
+            self.assertFalse(app.keep_popup_in_front())
+        front.assert_not_called()
+
+    def test_explorer_is_never_minimised(self):
+        with mock.patch.object(pb, "IS_WINDOWS", True), \
+                mock.patch.object(pb, "foreground_is_ours", return_value=False), \
+                mock.patch.object(pb, "hide_app") as hide, \
+                mock.patch.object(pb, "bring_app_to_front"), \
+                mock.patch.dict(app.last_drift, {"front_app": "explorer"}):
+            app.keep_popup_in_front()
+        hide.assert_not_called()
+
+    def test_mac_unchanged(self):
+        with mock.patch.object(pb, "IS_WINDOWS", False), mock.patch.object(pb, "bring_app_to_front") as front:
+            self.assertFalse(app.keep_popup_in_front())
+            self.assertFalse(pb.cover_screen(FakeWindow(FakeForm())))
+            self.assertIsNone(pb.foreground_is_ours(1))
+        front.assert_not_called()
+
+    def test_windows_popup_is_made_full_screen(self):
+        src = (ROOT / "desktop_app.py").read_text(encoding="utf-8")
+        self.assertIn("platform_bridge.cover_screen(friction_window)", src)
+        self.assertIn("min-height:100vh", (ROOT / "friction.html").read_text(encoding="utf-8"))

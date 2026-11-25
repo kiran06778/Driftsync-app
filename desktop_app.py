@@ -869,7 +869,10 @@ def trigger_friction_intercept(detected_item, raw_info="", insight=None):
         friction_path = BASE_DIR / "friction.html"
         friction_window.load_url(friction_path.as_uri())
         friction_window.show()
-        friction_window.restore()
+        if platform_bridge.IS_WINDOWS:
+            platform_bridge.cover_screen(friction_window)   # full screen: it can't be dragged aside
+        else:
+            friction_window.restore()
         platform_bridge.set_on_top(friction_window, True)
 
         platform_bridge.bring_app_to_front(os.getpid())
@@ -912,6 +915,21 @@ def show_soft_reminder(style, detected_item, count=1):
     return shown
 
 
+def keep_popup_in_front():
+    """Windows: while the drift popup is up, switching back to the video (Alt+Tab, the taskbar) doesn't work:
+    the distracting app is minimised again and the popup comes back in front. Answering the popup is the way out."""
+    if not platform_bridge.IS_WINDOWS:
+        return False
+    if platform_bridge.foreground_is_ours(os.getpid()) is not False:
+        return False
+    app = last_drift.get("front_app") or ""
+    if app and app.lower() not in ("explorer", "python", "pythonw", "driftsync"):
+        platform_bridge.hide_app(app)
+    platform_bridge.bring_app_to_front(os.getpid())
+    print(f"↩️ [POPUP] Answer the intention check first ({app or 'another app'} was brought to the front).", flush=True)
+    return True
+
+
 def monitor_loop():
     global grace_period_end
     print("[MONITOR] Radar Online.", flush=True)
@@ -925,6 +943,8 @@ def monitor_loop():
             print(f"[LEVEL 3] watchdog error: {e}", flush=True)
 
         session_type = active_session_config.get("sessionType", "FOCUS").upper()
+        if is_friction_active and timer_is_running and session_type == "FOCUS":
+            keep_popup_in_front()
         if not (timer_is_running and session_type == "FOCUS") or is_friction_active:
             continue
 
